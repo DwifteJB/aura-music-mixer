@@ -210,18 +210,18 @@ def worker_thread():
 worker = threading.Thread(target=worker_thread, daemon=True)
 worker.start()
 
-# @app.before_request
-# def before_request():
-#     # cleanup old files
-#     cleanup_old_files([UPLOAD_FOLDER, OUTPUT_FOLDER, TEMP_FOLDER], minutes=120)
+@app.before_request
+def before_request():
+    # cleanup old files
+    cleanup_old_files([UPLOAD_FOLDER, OUTPUT_FOLDER, TEMP_FOLDER], minutes=120)
 
-#     # check if key is correct
-#     ip = request.remote_addr
-#     sentKey = request.headers.get('rmfosho-real-key')
+    # check if key is correct
+    ip = request.remote_addr
+    sentKey = request.headers.get('rmfosho-real-key')
 
-#     if sentKey != SPLEETER_KEY:
-#         logger.warning(f"{ip} used the incorrect key: {sentKey}")
-#         return jsonify({'error': 'Unauthorized'}), 403
+    if sentKey != SPLEETER_KEY:
+        logger.warning(f"{ip} used the incorrect key: {sentKey}")
+        return jsonify({'error': 'Unauthorized'}), 403
 
 
 
