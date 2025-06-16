@@ -1,7 +1,7 @@
-# TODO: REDIS SERVER FOR JOB QUEUE!
+# TODO: REDIS SERVER FOR JOB QUEUE! (SHOULD I???)
 # cleanup redis server by limitting the ttl to 5 mihns
 
-# TODO: add key suppport
+# DONE: add key suppport!
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  
@@ -31,6 +31,9 @@ from werkzeug.utils import secure_filename
 from queue import Queue
 import tempfile
 import time
+from pydub import AudioSegment
+
+# import redis
 
 import threading
 
@@ -44,9 +47,12 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # limits upload size to 10
 UPLOAD_FOLDER = '/app/uploads'
 OUTPUT_FOLDER = '/app/outputs'
 TEMP_FOLDER = '/app/temp'
-CALLBACK_URL = os.getenv('MAIN_SERVER_URL', 'http://host.docker.internal:3000/api/spleeter/callback')
+CALLBACK_URL = os.getenv('MAIN_SERVER_URL', 'http://host.docker.internal:3000/api/spleeter/callback') # assuming both are hosted on same docker network
 MY_URL = os.getenv('SPLEETER_API_URL', 'http://localhost:5000')
 SPLEETER_KEY = os.getenv('SPLEETER_SERVER_KEY', 'your_spleeter_key_here')
+
+# REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+# REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -61,7 +67,7 @@ ALLOWED_EXTENSIONS = {'mp3', 'wav', 'flac', 'm4a', 'ogg', 'wma', 'aac'}
 
 separator = None
 
-def cleanup_old_files(folders, minutes=5):
+def cleanup_old_files(folders, minutes=120):
     """cleanup old files in specified folders"""
     cutoff_time = time.time() - (minutes * 60)
     for folder in folders:
@@ -79,7 +85,7 @@ def get_separator():
     global separator
     if separator is None:
         logger.info("Initializing Spleeter separator...")
-        separator = Separator('spleeter:2stems-16kHz')
+        separator = Separator('spleeter:2stems')
         logger.info("Spleeter separator initialized")
     return separator
 
@@ -126,10 +132,24 @@ def process_audio_job(job_id, input_file_path):
         
         vocals_path = os.path.join(job_output_dir, vocals_filename)
         instrumental_path = os.path.join(job_output_dir, instrumental_filename)
-        
+
         sf.write(vocals_path, prediction['vocals'], sample_rate)
         sf.write(instrumental_path, prediction['accompaniment'], sample_rate)
-        
+
+        # save as wav, convert to mp3 then delete wav (saves so much in compression)
+
+        audioVocals = AudioSegment.from_wav(vocals_path)
+        audioVocals.export(vocals_path.replace('.wav', '.mp3'), format="mp3", bitrate="192k")
+
+        audioInstrumental = AudioSegment.from_wav(instrumental_path)
+        audioInstrumental.export(instrumental_path.replace('.wav', '.mp3'), format="mp3", bitrate="192k")
+
+        vocals_filename = vocals_filename.replace('.wav', '.mp3')
+        instrumental_filename = instrumental_filename.replace('.wav', '.mp3')
+
+        os.remove(vocals_path)
+        os.remove(instrumental_path)
+
         logger.info(f"Audio separation completed for job {job_id}")
         
         vocals_url = f"{MY_URL}/download/{job_id}/{vocals_filename}"
@@ -170,7 +190,7 @@ def worker_thread():
     
     while True:
         try:
-            cleanup_old_files([UPLOAD_FOLDER, OUTPUT_FOLDER, TEMP_FOLDER], minutes=5) # gotta keep storage down, this is free after all :P
+            cleanup_old_files([UPLOAD_FOLDER, OUTPUT_FOLDER, TEMP_FOLDER], minutes=120) # gotta keep storage down, this is free after all :P
             job_data = job_queue.get()
             
             if job_data is None:  # shutdown
@@ -189,6 +209,21 @@ def worker_thread():
 
 worker = threading.Thread(target=worker_thread, daemon=True)
 worker.start()
+
+# @app.before_request
+# def before_request():
+#     # cleanup old files
+#     cleanup_old_files([UPLOAD_FOLDER, OUTPUT_FOLDER, TEMP_FOLDER], minutes=120)
+
+#     # check if key is correct
+#     ip = request.remote_addr
+#     sentKey = request.headers.get('rmfosho-real-key')
+
+#     if sentKey != SPLEETER_KEY:
+#         logger.warning(f"{ip} used the incorrect key: {sentKey}")
+#         return jsonify({'error': 'Unauthorized'}), 403
+
+
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -323,6 +358,7 @@ def list_jobs():
     except Exception as e:
         logger.error(f"Failed to list jobs: {str(e)}")
         return jsonify({'error': 'Failed to list jobs'}), 500
+    
 
 if __name__ == '__main__':
     logger.info("Pre-loading Spleeter separator...")
