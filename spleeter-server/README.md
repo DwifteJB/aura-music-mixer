@@ -1,0 +1,1 @@
+this folder is for NVIDIA gpus only, for CPU or AMD only check out **TODO**
