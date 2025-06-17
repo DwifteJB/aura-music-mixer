@@ -5,11 +5,71 @@ import { Express, Request, Response } from "express";
 import prisma from "../lib/prisma";
 
 const useUserRoutes = (app: Express) => {
-  app.post("/api/v1/user/create", async (req: Request, res: Response) => {
-    const username = req.body.username as string;
+  app.post("/api/v1/user/logout", async (req: Request, res: Response) => {
+    res.clearCookie("key", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // set to true in production
+      sameSite: "strict",
+    });
 
-    if (!username) {
+    res.status(200).json({ message: "User logged out successfully" });
+    return;
+  });
+  app.post("/api/v1/user/login", async (req: Request, res: Response) => {
+    const key = req.body.key as string;
+
+    console.log("Login attempt with key:", key.trim());
+
+    if (!key || key.trim() === "") {
+      res.status(400).json({ error: "Key is required" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        key: key.trim(),
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.cookie("key", user.key, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // set to true in production
+      sameSite: "strict",
+      maxAge: 31536000, // 1 year
+    });
+
+    res.status(200).json({
+      message: "User logged in successfully",
+      user: {
+        id: user.id,
+        name: user.name,
+        key: user.key,
+      },
+    });
+    return;
+  });
+  app.post("/api/v1/user/create", async (req: Request, res: Response) => {
+    let username = req.body.username as string;
+
+    if (!username || username.trim() === "") {
       res.status(400).json({ error: "Username is required" });
+      return;
+    }
+
+    username = username.trim().replace(/[^a-zA-Z0-9_]/g, "");
+
+    if (username.length < 3 || username.length > 16) {
+      res.status(400).json({
+        error:
+          username.length < 3
+            ? "Username must be at least 3 characters long"
+            : "Username must be at most 16 characters long",
+      });
       return;
     }
     // generate user!!

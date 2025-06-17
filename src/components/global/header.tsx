@@ -8,6 +8,7 @@ import {
   User,
 } from "lucide-react";
 import { useAppContext } from "../AppContext";
+import cookie from "js-cookie";
 
 import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
 import { animated, useSpring } from "@react-spring/web";
@@ -146,7 +147,46 @@ const Header = () => {
             </Popover>
 
             <div className="flex justify-center items-center bg-[#1F1F1F] rounded-full p-2">
-              <User fill="white" />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="cursor-pointer">
+                    <User fill="white" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="bg-black w-fit mr-3 mt-2">
+                  <span className="text-xs ibm-plex-mono-regular tracking-tight">
+                    logged in as{" "}
+                  </span>
+                  <span className="text-xs ibm-plex-mono-regular tracking-tight">
+                    {Context.user ? Context.user.name : "no one!!?"}
+                  </span>
+
+                  <br />
+                  <br />
+                  <span
+                    className="text-xs cursor-pointer !text-blue-300 ibm-plex-mono-regular tracking-tight"
+                    onClick={() => {
+                      Context.setUser(null!);
+                      localStorage.removeItem("user");
+                      localStorage.removeItem("key");
+                      localStorage.removeItem("lastUpdatedUser");
+
+                      fetch(
+                        `${import.meta.env.VITE_MAIN_SERVER_URL}/api/v1/user/logout`,
+                        {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          credentials: "include",
+                        },
+                      );
+                    }}
+                  >
+                    sign out!
+                  </span>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </div>

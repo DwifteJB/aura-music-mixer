@@ -16,9 +16,9 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
 import toast from "react-hot-toast";
-import { createUser } from "@/lib/api-helper";
+import { createUser, loginWithKey } from "@/lib/api-helper";
 
-const UsernameCreate = ({
+const EnterKey = ({
   open,
   setOpen,
 }: {
@@ -26,29 +26,23 @@ const UsernameCreate = ({
   setOpen: (open: boolean) => void;
 }) => {
   const Context = useContext(AppContext);
-  const [username, setUsername] = useState("");
-  const [creatingUser, setCreatingUser] = useState(false);
+  const [key, setKey] = useState("");
+  const [loggingin, setLoggingIn] = useState(false);
 
-  const CREATE_USERRR = async (username: string) => {
+  const LOGIN_WITH_DA_KEY = async (key: string) => {
     return new Promise(async (resolve, reject) => {
-      if (username.length < 3 || username.length > 16) {
-        return reject(
-          new Error(
-            username.length < 3
-              ? "Username must be at least 3 characters long"
-              : "Username must be at most 16 characters long",
-          ),
-        );
+      if (key.length < 3) {
+        return reject(new Error("Key must be at least 3 characters long"));
       }
 
-      if (creatingUser) {
-        return reject(new Error("Profile creation in progress!!"));
+      if (loggingin) {
+        return reject(new Error("Login in progress!!"));
       }
 
-      setCreatingUser(true);
+      setLoggingIn(true);
 
       try {
-        const res = await createUser(username);
+        const res = await loginWithKey(key);
 
         if (res?.id && res.key) {
           Context.setUser({
@@ -61,26 +55,29 @@ const UsernameCreate = ({
           localStorage.setItem("user", JSON.stringify(res));
           localStorage.setItem("lastUpdatedUser", new Date().toISOString());
 
-          setCreatingUser(false);
+          setLoggingIn(false);
           return resolve(res);
+        } else {
+          setLoggingIn(false);
+          return reject(new Error("Failed to login with key"));
         }
       } catch (err) {
-        setCreatingUser(false);
-        return reject(err);
+        setLoggingIn(false);
+        return reject(
+          err instanceof Error ? err : new Error("An error occurred"),
+        );
       }
     });
-
-    // on done
   };
 
-  const startCreateUser = () => {
-    const promise = CREATE_USERRR(username);
+  const startLoginUser = () => {
+    const promise = LOGIN_WITH_DA_KEY(key);
 
     toast.promise(promise, {
-      loading: "Creating user...",
-      success: "Your profile has been made!",
+      loading: "Logging in...",
+      success: "You have been logged in!",
       error: (err) => {
-        setCreatingUser(false);
+        setLoggingIn(false);
         return err instanceof Error ? err.message : "An error occurred";
       },
     });
@@ -93,21 +90,19 @@ const UsernameCreate = ({
   };
 
   return (
-    <Dialog open={open}>
-      <DialogContent showCloseButton={false} className="bg-black">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="bg-black">
         <DialogHeader>
-          <DialogTitle>Select your username!</DialogTitle>
+          <DialogTitle>Enter your key!</DialogTitle>
           <DialogDescription className="text-sm">
             <div className="pt-2 pb-2">
-              <span className="text-xs pb-1 text-gray-400">Username</span>
+              <span className="text-xs pb-1 text-gray-400">Key</span>
               <Input
                 onChange={(e) => {
-                  setUsername(
-                    e.target.value.trim().replace(/[^a-zA-Z0-9_]/g, ""),
-                  );
+                  setKey(e.target.value.trim());
                 }}
-                value={username}
-                placeholder="rmfosho"
+                value={key}
+                placeholder="2d5b86:6f3c6b:jvw8fp"
               />
             </div>
           </DialogDescription>
@@ -121,12 +116,12 @@ const UsernameCreate = ({
               //.. add blah
 
               //   setSeenBefore(true);
-              startCreateUser();
+              startLoginUser();
             }}
-            disabled={creatingUser}
+            disabled={loggingin}
             className="bg-[var(--text-branding)] hover:bg-[#ee31ee]/80"
           >
-            Create Account
+            Login
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -134,4 +129,4 @@ const UsernameCreate = ({
   );
 };
 
-export default UsernameCreate;
+export default EnterKey;

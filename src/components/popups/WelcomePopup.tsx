@@ -15,12 +15,13 @@ import { motion } from "motion/react";
 import { Button } from "../ui/button";
 
 import UsernameCreate from "./UsernameCreate";
+import EnterKey from "./EnterKey";
 
-import { Input } from "../ui/input";
 const WelcomePopup = () => {
   const Context = useContext(AppContext);
   const [seenBefore, setSeenBefore] = useState(true);
   const [createUsernameOpen, setCreateUsernameOpen] = useState(false);
+  const [enterKeyOpen, setEnterKeyOpen] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -34,6 +35,7 @@ const WelcomePopup = () => {
 
   return (
     <>
+      <EnterKey open={enterKeyOpen} setOpen={setEnterKeyOpen} />
       <UsernameCreate
         open={createUsernameOpen}
         setOpen={setCreateUsernameOpen}
@@ -99,6 +101,7 @@ const WelcomePopup = () => {
               onClick={() => {
                 // add key
                 // setSeenBefore(true);
+                setEnterKeyOpen(true);
               }}
               className="bg-[#7a0675] hover:bg-[#7a0675]/80"
             >
