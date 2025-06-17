@@ -1,6 +1,6 @@
 // little welcome to the user :3
 
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { AppContext } from "../AppContext";
 
 import {
@@ -11,12 +11,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { motion } from "motion/react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
 import toast from "react-hot-toast";
-import { createUser, loginWithKey } from "@/lib/api-helper";
+import { loginWithKey } from "@/lib/api-helper";
 
 const EnterKey = ({
   open,

@@ -11,4 +11,21 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          yeezyOuttaHere: ["react", "react-dom", "react-hot-toast", "react-router"],
+          iGotMotion: [
+            "motion/react",
+            "@react-spring/web",
+            "lucide-react",
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-popover",
+            "@radix-ui/react-slot",
+          ]
+        }
+      },
+    }
+  }
 });

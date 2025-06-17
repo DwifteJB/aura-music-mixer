@@ -8,7 +8,6 @@ import {
   User,
 } from "lucide-react";
 import { useAppContext } from "../AppContext";
-import cookie from "js-cookie";
 
 import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
 import { animated, useSpring } from "@react-spring/web";
@@ -55,7 +54,7 @@ const Header = () => {
           </div>
           <div className="flex items-center w-1/3 justify-end">
             <Popover
-              onOpenChange={(open) => {
+              onOpenChange={() => {
                 api.start({
                   from: { transform: "translateY(-5%)", rotate: "9deg" },
                   to: { transform: "translateY(0%)", rotate: "0deg" },
@@ -93,7 +92,7 @@ const Header = () => {
                           You have no notifications.
                         </span>
                       ) : (
-                        Context.notifications.map((notification, index) => (
+                        Context.notifications.map((notification) => (
                           <div className="border-white items-center justify-center p-2 border rounded-2xl">
                             <div className="flex  gap-2 p-2 ">
                               <div className="w-1/5  h-full">
