@@ -1,6 +1,26 @@
-import { Headphones, Home, Library, Search, User } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  Home,
+  Info,
+  Library,
+  Search,
+  User,
+} from "lucide-react";
+import { useAppContext } from "../AppContext";
+
+import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
+import { animated, useSpring } from "@react-spring/web";
 
 const Header = () => {
+  const Context = useAppContext();
+
+  const [spring, api] = useSpring(() => ({
+    from: { transform: "translateY(-5%)", rotate: "9deg" },
+    to: { transform: "translateY(0%)", rotate: "0deg" },
+    config: { tension: 200, friction: 20 },
+    reset: true,
+  }));
   return (
     <div className="w-screen items-center justify-center flex">
       <header
@@ -33,8 +53,111 @@ const Header = () => {
             </span>
           </div>
           <div className="flex items-center w-1/3 justify-end">
+            <Popover
+              onOpenChange={(open) => {
+                api.start({
+                  from: { transform: "translateY(-5%)", rotate: "9deg" },
+                  to: { transform: "translateY(0%)", rotate: "0deg" },
+                  config: { tension: 200, friction: 20 },
+                  reset: true,
+                });
+              }}
+            >
+              <PopoverTrigger asChild>
+                <animated.div style={spring}>
+                  <Bell className="mr-4 cursor-pointer"></Bell>
+
+                  {Context.notifications.length > 0 && (
+                    <span className="absolute  left-[13px] top-[8px] bg-red-500 text-white text-xs rounded-full px-1">
+                      {Context.notifications.length}
+                    </span>
+                  )}
+                </animated.div>
+              </PopoverTrigger>
+              <PopoverContent className="bg-black mr-3 mt-2">
+                <div className="">
+                  <span className="tracking-tight">Notifications</span>
+
+                  <div className="w-full border-[#e4dada] border-b h-1" />
+
+                  <div className="pt-2">
+                    <div className="flex flex-col gap-2">
+                      {Context.notifications.length === 0 ? (
+                        <span className="text-sm text-gray-400">
+                          You have no notifications.
+                        </span>
+                      ) : (
+                        Context.notifications.map((notification, index) => (
+                          <div className="border-white items-center justify-center p-2 border rounded-2xl">
+                            <div className="flex  gap-2 p-2 ">
+                              <div className="w-1/6  h-full">
+                                {(() => {
+                                  switch (notification.type) {
+                                    case "pending":
+                                      return (
+                                        <Info
+                                          size={32}
+                                          color="blue"
+                                          className="text-blue-400"
+                                        />
+                                      );
+                                    case "info":
+                                      return (
+                                        <Info
+                                          size={32}
+                                          color="white"
+                                          className="text-blue-400"
+                                        />
+                                      );
+                                    case "error":
+                                      return (
+                                        <AlertTriangle
+                                          size={32}
+                                          color="#F80F3A"
+                                          className="text-red-400"
+                                        />
+                                      );
+                                    default:
+                                      return (
+                                        <Bell
+                                          size={32}
+                                          className="text-gray-400"
+                                        />
+                                      );
+                                  }
+                                })()}
+                              </div>
+                              <div>
+                                <span className="text-sm  tracking-tight">
+                                  {notification.message}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="w-full items-center justify-center flex mt-2">
+                              <span className="text-xs !text-gray-400">
+                                {new Date(
+                                  notification.createdAt,
+                                ).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+
+                      <div className="w-full items-center justify-center">
+                        <span className="text-xs !text-gray-400 cursor-pointer hover:text-white transition-all duration-200">
+                          Clear All
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
             <div className="flex justify-center items-center bg-[#1F1F1F] rounded-full p-2">
-              <User fill="white"></User>
+              <User fill="white" />
             </div>
           </div>
         </div>

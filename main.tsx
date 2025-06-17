@@ -3,11 +3,26 @@ import { createRoot } from "react-dom/client";
 import "./src/css/index.css";
 
 import Router from "./src/components/global/router";
+import { Toaster } from "react-hot-toast";
+
+import AppContextProvider from "./src/components/AppContext";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <div className="w-screen h-screen main-bg">
-      <Router />
-    </div>
+    <Toaster
+      toastOptions={{
+        style: {
+          backgroundColor: "#1F1F1F",
+          color: "white",
+          fontFamily: "Inter, sans-serif",
+          fontSize: "16px",
+        },
+      }}
+    />
+    <AppContextProvider>
+      <div className="w-screen h-screen main-bg">
+        <Router />
+      </div>
+    </AppContextProvider>
   </StrictMode>,
 );
