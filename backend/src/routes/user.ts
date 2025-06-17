@@ -5,14 +5,25 @@ import { Express, Request, Response } from "express";
 import prisma from "../lib/prisma";
 
 const useUserRoutes = (app: Express) => {
-  app.get("/api/v1/user/create", async (req: Request, res: Response) => {
-    const username = req.query.username as string;
+  app.post("/api/v1/user/create", async (req: Request, res: Response) => {
+    const username = req.body.username as string;
 
     if (!username) {
       res.status(400).json({ error: "Username is required" });
       return;
     }
     // generate user!!
+
+    const usernameExists = await prisma.user.findFirst({
+      where: {
+        name: username,
+      },
+    });
+
+    if (usernameExists) {
+      res.status(400).json({ error: "Username already exists" });
+      return;
+    }
 
     const ipAddress =
       req.headers["CF-Connecting-IP"] ||

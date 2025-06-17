@@ -45,7 +45,7 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # limits upload size to 10
 UPLOAD_FOLDER = '/app/uploads'
 OUTPUT_FOLDER = '/app/outputs'
 TEMP_FOLDER = '/app/temp'
-CALLBACK_URL = os.getenv('MAIN_SERVER_URL', 'http://host.docker.internal:3000') # assuming both are hosted on same docker network
+CALLBACK_URL = os.getenv('VITE_MAIN_SERVER_URL', 'http://host.docker.internal:3000') # assuming both are hosted on same docker network
 MY_URL = os.getenv('SPLEETER_API_URL', 'http://localhost:5000')
 SPLEETER_KEY = os.getenv('SPLEETER_SERVER_KEY', 'your_spleeter_key_here')
 

@@ -2,7 +2,7 @@ import type { User } from "@/types";
 
 export const getUserFromKey = async (key: string): Promise<User | null> => {
   const response = await fetch(
-    `${process.env.MAIN_SERVER_URL}/api/v1/user/whoami`,
+    `${import.meta.env.VITE_MAIN_SERVER_URL}/api/v1/user/whoami`,
     {
       method: "GET",
       headers: {
@@ -24,7 +24,7 @@ export const getUserFromKey = async (key: string): Promise<User | null> => {
 
 export const createUser = async (username: string): Promise<User | null> => {
   const response = await fetch(
-    `${process.env.MAIN_SERVER_URL}/api/v1/user/create`,
+    `${import.meta.env.VITE_MAIN_SERVER_URL}/api/v1/user/create`,
     {
       method: "POST",
       headers: {

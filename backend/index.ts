@@ -110,12 +110,14 @@ app.use(cookies());
 
 // cors
 app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
+  console.log("cors", req.headers.origin, process.env.FRONTEND_URL);
   let origin = req.headers.origin;
   if (req.headers.origin) {
     if (
-      origin === process.env.MAIN_SERVER_URL ||
+      origin === process.env.FRONTEND_URL ||
       origin === process.env.SPLEETER_API_URL
     ) {
+      console.log("CORS: Allowing origin", origin);
       res.header("Access-Control-Allow-Origin", origin);
     } else {
       res.header("Access-Control-Allow-Origin", "http://localhost:3000");
@@ -123,6 +125,8 @@ app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
   }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
+
   next();
 });
 

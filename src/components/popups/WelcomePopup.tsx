@@ -19,12 +19,18 @@ import UsernameCreate from "./UsernameCreate";
 import { Input } from "../ui/input";
 const WelcomePopup = () => {
   const Context = useContext(AppContext);
-  const [seenBefore, setSeenBefore] = useState(false);
+  const [seenBefore, setSeenBefore] = useState(true);
   const [createUsernameOpen, setCreateUsernameOpen] = useState(false);
 
   useEffect(() => {
-    setSeenBefore(Context.triedUserAuth && !!Context.user?.key);
-  }, [Context.triedUserAuth]);
+    const timer = setTimeout(() => {
+      console.log("USER", Context.user);
+      console.log("Tried User Auth", Context.triedUserAuth);
+      setSeenBefore(Context.triedUserAuth && !!Context.user?.key);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [Context.triedUserAuth, Context.user]);
 
   return (
     <>
@@ -38,7 +44,13 @@ const WelcomePopup = () => {
           setSeenBefore(!seenBefore);
         }}
       >
-        <DialogContent showCloseButton={false} className="bg-black">
+        <DialogContent
+          onInteractOutside={(e) => {
+            e.preventDefault();
+          }}
+          showCloseButton={false}
+          className="bg-black"
+        >
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center">
               Welcome to{" "}

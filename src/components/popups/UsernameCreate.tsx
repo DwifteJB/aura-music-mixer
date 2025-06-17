@@ -16,6 +16,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
 import toast from "react-hot-toast";
+import { createUser } from "@/lib/api-helper";
 
 const UsernameCreate = ({
   open,
@@ -29,21 +30,47 @@ const UsernameCreate = ({
   const [creatingUser, setCreatingUser] = useState(false);
 
   const CREATE_USERRR = async (username: string) => {
-    if (username.length < 3 || username.length > 16) {
-      toast.error(
-        username.length < 3
-          ? "Username must be at least 3 characters long!"
-          : "Username must be less than 16 characters long!",
-      );
-      return;
-    }
+    return new Promise(async (resolve, reject) => {
+      if (username.length < 3 || username.length > 16) {
+        return reject(
+          new Error(
+            username.length < 3
+              ? "Username must be at least 3 characters long"
+              : "Username must be at most 16 characters long",
+          ),
+        );
+      }
 
-    if (creatingUser) {
-      toast.error("you are already being made!!!");
-      return;
-    }
+      if (creatingUser) {
+        return reject(new Error("Profile creation in progress!!"));
+      }
 
-    setCreatingUser(true);
+      setCreatingUser(true);
+
+      try {
+        const res = await createUser(username);
+
+        if (res?.id && res.key) {
+          Context.setUser({
+            id: res.id,
+            name: res.name,
+            key: res.key,
+          });
+
+          localStorage.setItem("key", res.key);
+          localStorage.setItem("user", JSON.stringify(res));
+          localStorage.setItem("lastUpdatedUser", new Date().toISOString());
+
+          setCreatingUser(false);
+          return resolve(res);
+        }
+      } catch (err) {
+        setCreatingUser(false);
+        return reject(err);
+      }
+    });
+
+    // on done
   };
 
   const startCreateUser = () => {
@@ -51,11 +78,17 @@ const UsernameCreate = ({
 
     toast.promise(promise, {
       loading: "Creating user...",
-      success: "Your profile has been made!¬",
+      success: "Your profile has been made!",
       error: (err) => {
         setCreatingUser(false);
         return err instanceof Error ? err.message : "Failed to create user!";
       },
+    });
+
+    promise.then((res) => {
+      if (res) {
+        setOpen(false);
+      }
     });
   };
 

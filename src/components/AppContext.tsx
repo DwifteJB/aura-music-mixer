@@ -1,5 +1,5 @@
 import type { AppContextType, User, Notification } from "@/types";
-import React from "react";
+import React, { useEffect } from "react";
 
 export const AppContext = React.createContext<AppContextType>(null!);
 
@@ -33,6 +33,62 @@ export const AppContextProvider: React.FC<React.PropsWithChildren> = ({
       createdAt: new Date().toISOString(),
     },
   ]);
+
+  const AUTH_USER = async () => {
+    const lastUpdatedUser = Date.parse(
+      localStorage.getItem("lastUpdatedUser") || "0",
+    );
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+    if (user && lastUpdatedUser) {
+      if (lastUpdatedUser + 1000 * 60 * 60 > Date.now()) {
+        console.log("set user", user);
+        setUser(user);
+        setTriedUserAuth(true);
+      }
+    } else {
+      const cookies = document.cookie.split("; ");
+      const key = cookies
+        .find((cookie) => cookie.startsWith("key="))
+        ?.split("=")[1];
+
+      if (key) {
+        try {
+          const res = await fetch(
+            `${import.meta.env.VITE_MAIN_SERVER_URL}/api/v1/user/whoami`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: key,
+              },
+              credentials: "include",
+            },
+          );
+
+          if (!res.ok) {
+            throw new Error("Failed to fetch user data");
+          }
+
+          const data = await res.json();
+          if (data.user) {
+            console.log("set user 2", data.user);
+            setUser(data.user);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            localStorage.setItem("key", key);
+            localStorage.setItem("lastUpdatedUser", new Date().toISOString());
+          }
+        } catch (error) {
+          console.error("Error fetching user:", error);
+        }
+      }
+      setTriedUserAuth(true);
+    }
+  };
+
+  useEffect(() => {
+    AUTH_USER();
+  }, []);
 
   return (
     <AppContext.Provider
