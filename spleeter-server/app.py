@@ -1,8 +1,4 @@
-# TODO: REDIS SERVER FOR JOB QUEUE! (SHOULD I???)
-# cleanup redis server by limitting the ttl to 5 mihns
-
-# DONE: add key suppport!
-
+# TODO: REDIS SERVER FOR JOB QUEUE! (SHOULD I???. no lol)
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
@@ -20,6 +16,7 @@ if gpus:
 else:
     print("no gpus!!!! using cpu :(")
 
+import socketio
 import requests
 import uuid
 import shutil
@@ -40,6 +37,7 @@ import threading
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+sio = socketio.Client() # better communication lol
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # limits upload size to 100mb
 
@@ -47,7 +45,7 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # limits upload size to 10
 UPLOAD_FOLDER = '/app/uploads'
 OUTPUT_FOLDER = '/app/outputs'
 TEMP_FOLDER = '/app/temp'
-CALLBACK_URL = os.getenv('MAIN_SERVER_URL', 'http://host.docker.internal:3000/api/spleeter/callback') # assuming both are hosted on same docker network
+CALLBACK_URL = os.getenv('MAIN_SERVER_URL', 'http://host.docker.internal:3000') # assuming both are hosted on same docker network
 MY_URL = os.getenv('SPLEETER_API_URL', 'http://localhost:5000')
 SPLEETER_KEY = os.getenv('SPLEETER_SERVER_KEY', 'your_spleeter_key_here')
 
@@ -66,6 +64,50 @@ job_results = {}
 ALLOWED_EXTENSIONS = {'mp3', 'wav', 'flac', 'm4a', 'ogg', 'wma', 'aac'}
 
 separator = None
+
+# socket
+
+@sio.event
+def connect():
+    logger.info("connected to main backend via, ws")
+    sio.emit('service_connected', {'service': 'spleeter'})
+
+@sio.event
+def disconnect():
+    logger.info("!!! disconnected from main server :(")
+
+# @sio.event
+# def connect_error(data):
+    # logger.error(f"could not connect to main server: {data}")
+
+def connect_to_main_server():
+    try:
+        sio.connect(CALLBACK_URL, auth={'key': SPLEETER_KEY}, socketio_path="/api/internal/socket")
+    except Exception as e:
+        # logger.error(f"failed connecting: {e}")
+        threading.Timer(5.0, connect_to_main_server).start()
+
+def send_ws_message(job_id, status, progress=None, vocals_url=None, instrumental_url=None, error=None):
+    try:
+        data = {
+            'job_id': job_id,
+            'status': status,
+            'progress': progress,
+            'vocals_url': vocals_url,
+            'instrumental_url': instrumental_url,
+            'error': error,
+            'timestamp': time.time()
+        }
+        
+        if sio.connected:
+            sio.emit('job_update', data)
+            logger.info(f"sent ws for job {job_id}: {status}")
+        else:
+            logger.warning(f"NO WS!!")
+            
+    except Exception as e:
+        logger.error(f"failed to send update for job {job_id}: {str(e)}")
+
 
 def cleanup_old_files(folders, minutes=120):
     """cleanup old files in specified folders"""
@@ -89,39 +131,23 @@ def get_separator():
         logger.info("Spleeter separator initialized")
     return separator
 
-def send_callback(job_id, status, vocals_url=None, instrumental_url=None, error=None):
-    """callbacks for main server, use ws on main to give user status"""
-    try:
-        data = {
-            'job_id': job_id,
-            'status': status,
-            'vocals_url': vocals_url,
-            'instrumental_url': instrumental_url,
-            'error': error
-        }
-        
-        response = requests.post(CALLBACK_URL, json=data, timeout=30)
-        response.raise_for_status()
-        logger.info(f"Sent callback for job {job_id}: {status}")
-    except Exception as e:
-        logger.error(f"Failed to send callback for job {job_id}: {str(e)}")
-
 def process_audio_job(job_id, input_file_path):
     temp_dir = None
     
     try:
         logger.info(f"Starting processing job {job_id}")
         job_status[job_id] = 'processing'
+        send_ws_message(job_id, 'processing', progress=10)
         
         temp_dir = tempfile.mkdtemp(dir=TEMP_FOLDER)
-        
         sep = get_separator()
         
         logger.info(f"Reading audio file for job {job_id}")
+        send_ws_message(job_id, 'processing', progress=25)
         waveform, sample_rate = sf.read(input_file_path)
-        logger.info(f"Original sample rate: {sample_rate}Hz, duration: {len(waveform)/sample_rate:.2f}s")
         
         logger.info(f"Separator started for job {job_id}")
+        send_ws_message(job_id, 'processing', progress=50)
         prediction = sep.separate(waveform)
         
         job_output_dir = os.path.join(OUTPUT_FOLDER, job_id)
@@ -133,10 +159,9 @@ def process_audio_job(job_id, input_file_path):
         vocals_path = os.path.join(job_output_dir, vocals_filename)
         instrumental_path = os.path.join(job_output_dir, instrumental_filename)
 
+        send_ws_message(job_id, 'processing', progress=75)
         sf.write(vocals_path, prediction['vocals'], sample_rate)
         sf.write(instrumental_path, prediction['accompaniment'], sample_rate)
-
-        # save as wav, convert to mp3 then delete wav (saves so much in compression)
 
         audioVocals = AudioSegment.from_wav(vocals_path)
         audioVocals.export(vocals_path.replace('.wav', '.mp3'), format="mp3", bitrate="192k")
@@ -150,20 +175,17 @@ def process_audio_job(job_id, input_file_path):
         os.remove(vocals_path)
         os.remove(instrumental_path)
 
-        logger.info(f"Audio separation completed for job {job_id}")
-        
         vocals_url = f"{MY_URL}/download/{job_id}/{vocals_filename}"
         instrumental_url = f"{MY_URL}/download/{job_id}/{instrumental_filename}"
 
         job_status[job_id] = 'completed'
         job_results[job_id] = {
             'vocals_url': vocals_url,
-            'instrumental_url': instrumental_url,
-            'vocals_path': vocals_path,
-            'instrumental_path': instrumental_path
+            'instrumental_url': instrumental_url
         }
         
-        send_callback(job_id, 'completed', vocals_url, instrumental_url)
+        send_ws_message(job_id, 'completed', progress=100, 
+                           vocals_url=vocals_url, instrumental_url=instrumental_url)
         
         logger.info(f"Job {job_id} completed successfully")
         
@@ -174,16 +196,13 @@ def process_audio_job(job_id, input_file_path):
         job_status[job_id] = 'failed'
         job_results[job_id] = {'error': error_msg}
         
-        send_callback(job_id, 'failed', error=error_msg)
+        send_ws_message(job_id, 'failed', error=error_msg)
         
     finally:
         if temp_dir and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
-            logger.debug(f"Cleaned up temporary directory for job {job_id}")
-        
         if os.path.exists(input_file_path):
             os.remove(input_file_path)
-            logger.debug(f"Cleaned up input file for job {job_id}")
 
 def worker_thread():
     logger.info("Worker thread started")
@@ -193,7 +212,7 @@ def worker_thread():
             cleanup_old_files([UPLOAD_FOLDER, OUTPUT_FOLDER, TEMP_FOLDER], minutes=120) # gotta keep storage down, this is free after all :P
             job_data = job_queue.get()
             
-            if job_data is None:  # shutdown
+            if job_data is None:  
                 break
                 
             job_id = job_data['job_id']
@@ -237,7 +256,6 @@ def health_check():
 @app.route('/submit', methods=['POST'])
 def submit_job():
     try:
-
         if 'audio_file' not in request.files:
             return jsonify({'error': 'No audio file provided'}), 400
         
@@ -259,7 +277,6 @@ def submit_job():
         input_file_path = os.path.join(UPLOAD_FOLDER, input_filename)
         
         file.save(input_file_path)
-        logger.info(f"Saved uploaded file for job {job_id}: {input_file_path}")
         
         job_data = {
             'job_id': job_id,
@@ -270,7 +287,7 @@ def submit_job():
         job_status[job_id] = 'queued'
         job_queue.put(job_data)
         
-        logger.info(f"Queued job {job_id}")
+        send_ws_message(job_id, 'queued', progress=0)
         
         return jsonify({
             'job_id': job_id,
@@ -285,7 +302,6 @@ def submit_job():
 
 @app.route('/status/<job_id>', methods=['GET'])
 def get_job_status(job_id):
-    """get job status"""
     try:
         if job_id not in job_status:
             return jsonify({'error': 'Job not found'}), 404
@@ -320,23 +336,23 @@ def download_file(job_id, filename):
         logger.error(f"Failed to download file {job_id}/{filename}: {str(e)}")
         return jsonify({'error': 'Failed to download file'}), 500
 
-@app.route('/queue-status', methods=['GET'])
-def get_queue_status():
-    try:
-        status_counts = {}
-        for status in job_status.values():
-            status_counts[status] = status_counts.get(status, 0) + 1
+# @app.route('/queue-status', methods=['GET'])
+# def get_queue_status():
+#     try:
+#         status_counts = {}
+#         for status in job_status.values():
+#             status_counts[status] = status_counts.get(status, 0) + 1
         
-        return jsonify({
-            'queue_length': job_queue.qsize(),
-            'total_jobs': len(job_status),
-            'status_breakdown': status_counts,
-            'separator_loaded': separator is not None
-        }), 200
+#         return jsonify({
+#             'queue_length': job_queue.qsize(),
+#             'total_jobs': len(job_status),
+#             'status_breakdown': status_counts,
+#             'separator_loaded': separator is not None
+#         }), 200
         
-    except Exception as e:
-        logger.error(f"Failed to get queue status: {str(e)}")
-        return jsonify({'error': 'Failed to get queue status'}), 500
+#     except Exception as e:
+#         logger.error(f"Failed to get queue status: {str(e)}")
+#         return jsonify({'error': 'Failed to get queue status'}), 500
 
 @app.route('/jobs', methods=['GET'])
 def list_jobs():
@@ -364,6 +380,8 @@ if __name__ == '__main__':
     logger.info("Pre-loading Spleeter separator...")
     get_separator()
     logger.info("Spleeter separator pre-loaded successfully")
+
+    connect_to_main_server()
 
     if SPLEETER_KEY == 'your_spleeter_key_here':
         logger.warning("Using default Spleeter key, please set SPLEETER_SERVER_KEY environment variable for production use.")

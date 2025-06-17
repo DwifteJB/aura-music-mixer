@@ -11,4 +11,6 @@ rmfosho-real-key : SPLEETER_KEY (in env, it uses ../.env as main env)
 
 Lists all jobs as an array.
 
-### /
+### /queue-status
+
+Lists the queue status... I hope.?

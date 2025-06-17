@@ -74,23 +74,25 @@ const Header = () => {
                   )}
                 </animated.div>
               </PopoverTrigger>
-              <PopoverContent className="bg-black mr-3 mt-2">
+              <PopoverContent className="bg-black mr-3 mt-2 ibm-plex-mono-regular" style={{
+
+                }}>
                 <div className="">
-                  <span className="tracking-tight">Notifications</span>
+                  <span className="tracking-tight ibm-plex-mono-regular">Notifications</span>
 
                   <div className="w-full border-[#e4dada] border-b h-1" />
 
                   <div className="pt-2">
                     <div className="flex flex-col gap-2">
                       {Context.notifications.length === 0 ? (
-                        <span className="text-sm text-gray-400">
+                        <span className="text-sm ibm-plex-mono-regular text-gray-400">
                           You have no notifications.
                         </span>
                       ) : (
                         Context.notifications.map((notification, index) => (
                           <div className="border-white items-center justify-center p-2 border rounded-2xl">
                             <div className="flex  gap-2 p-2 ">
-                              <div className="w-1/6  h-full">
+                              <div className="w-1/5  h-full">
                                 {(() => {
                                   switch (notification.type) {
                                     case "pending":
@@ -98,7 +100,6 @@ const Header = () => {
                                         <Info
                                           size={32}
                                           color="blue"
-                                          className="text-blue-400"
                                         />
                                       );
                                     case "info":
@@ -106,7 +107,6 @@ const Header = () => {
                                         <Info
                                           size={32}
                                           color="white"
-                                          className="text-blue-400"
                                         />
                                       );
                                     case "error":
@@ -114,28 +114,26 @@ const Header = () => {
                                         <AlertTriangle
                                           size={32}
                                           color="#F80F3A"
-                                          className="text-red-400"
                                         />
                                       );
                                     default:
                                       return (
                                         <Bell
                                           size={32}
-                                          className="text-gray-400"
                                         />
                                       );
                                   }
                                 })()}
                               </div>
                               <div>
-                                <span className="text-sm  tracking-tight">
+                                <span className="text-sm ibm-plex-mono-regular tracking-tight">
                                   {notification.message}
                                 </span>
                               </div>
                             </div>
 
                             <div className="w-full items-center justify-center flex mt-2">
-                              <span className="text-xs !text-gray-400">
+                              <span className="text-xs ibm-plex-mono-regular !text-gray-400">
                                 {new Date(
                                   notification.createdAt,
                                 ).toLocaleString()}
@@ -145,11 +143,12 @@ const Header = () => {
                         ))
                       )}
 
-                      <div className="w-full items-center justify-center">
+                      {Context.notifications.length > 0 && (
+                        <div className="w-full items-center justify-center">
                         <span className="text-xs !text-gray-400 cursor-pointer hover:text-white transition-all duration-200">
                           Clear All
                         </span>
-                      </div>
+                      </div>)}
                     </div>
                   </div>
                 </div>
