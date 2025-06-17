@@ -74,11 +74,14 @@ const Header = () => {
                   )}
                 </animated.div>
               </PopoverTrigger>
-              <PopoverContent className="bg-black mr-3 mt-2 ibm-plex-mono-regular" style={{
-
-                }}>
+              <PopoverContent
+                className="bg-black mr-3 mt-2 ibm-plex-mono-regular"
+                style={{}}
+              >
                 <div className="">
-                  <span className="tracking-tight ibm-plex-mono-regular">Notifications</span>
+                  <span className="tracking-tight ibm-plex-mono-regular">
+                    Notifications
+                  </span>
 
                   <div className="w-full border-[#e4dada] border-b h-1" />
 
@@ -96,19 +99,9 @@ const Header = () => {
                                 {(() => {
                                   switch (notification.type) {
                                     case "pending":
-                                      return (
-                                        <Info
-                                          size={32}
-                                          color="blue"
-                                        />
-                                      );
+                                      return <Info size={32} color="blue" />;
                                     case "info":
-                                      return (
-                                        <Info
-                                          size={32}
-                                          color="white"
-                                        />
-                                      );
+                                      return <Info size={32} color="white" />;
                                     case "error":
                                       return (
                                         <AlertTriangle
@@ -117,11 +110,7 @@ const Header = () => {
                                         />
                                       );
                                     default:
-                                      return (
-                                        <Bell
-                                          size={32}
-                                        />
-                                      );
+                                      return <Bell size={32} />;
                                   }
                                 })()}
                               </div>
@@ -145,10 +134,11 @@ const Header = () => {
 
                       {Context.notifications.length > 0 && (
                         <div className="w-full items-center justify-center">
-                        <span className="text-xs !text-gray-400 cursor-pointer hover:text-white transition-all duration-200">
-                          Clear All
-                        </span>
-                      </div>)}
+                          <span className="text-xs !text-gray-400 cursor-pointer hover:text-white transition-all duration-200">
+                            Clear All
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

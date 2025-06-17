@@ -4,6 +4,8 @@ export type AppContextType = {
 
   setUser: (user: User) => void;
   setNotifications: (notifications: Notification[]) => void;
+
+  triedUserAuth: boolean;
 };
 
 export type User = {

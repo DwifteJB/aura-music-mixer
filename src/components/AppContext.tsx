@@ -18,6 +18,7 @@ export const AppContextProvider: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
   const [user, setUser] = React.useState<User>(null!);
+  const [triedUserAuth, setTriedUserAuth] = React.useState(true);
   const [notifications, setNotifications] = React.useState<Notification[]>([
     {
       type: "info",
@@ -35,7 +36,7 @@ export const AppContextProvider: React.FC<React.PropsWithChildren> = ({
 
   return (
     <AppContext.Provider
-      value={{ user, setUser, notifications, setNotifications }}
+      value={{ user, setUser, notifications, setNotifications, triedUserAuth }}
     >
       {children}
     </AppContext.Provider>

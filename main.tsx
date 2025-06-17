@@ -7,6 +7,8 @@ import { Toaster } from "react-hot-toast";
 
 import AppContextProvider from "./src/components/AppContext";
 
+import WelcomeDialog from "./src/components/popups/WelcomePopup";
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Toaster
@@ -20,6 +22,9 @@ createRoot(document.getElementById("root")!).render(
       }}
     />
     <AppContextProvider>
+      {/* additional */}
+      <WelcomeDialog />
+      {/* main */}
       <div className="w-screen h-screen main-bg">
         <Router />
       </div>
