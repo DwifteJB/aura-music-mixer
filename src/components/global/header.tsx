@@ -11,9 +11,11 @@ import { useAppContext } from "../AppContext";
 
 import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
 import { animated, useSpring } from "@react-spring/web";
+import { useNavigate } from "react-router";
 
 const Header = () => {
   const Context = useAppContext();
+  const navigate = useNavigate();
 
   const [spring, api] = useSpring(() => ({
     from: { transform: "translateY(-5%)", rotate: "9deg" },
@@ -35,7 +37,12 @@ const Header = () => {
       >
         <div className="flex items-center justify-between px-4 h-full">
           <div className="flex items-center w-1/3 ">
-            <Home className="mr-4" />
+            <Home
+              className="mr-4 cursor-pointer"
+              onClick={() => {
+                navigate("/");
+              }}
+            />
             <Library className="mr-4" />
             <Search className="mr-4" />
           </div>

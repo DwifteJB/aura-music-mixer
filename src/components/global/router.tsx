@@ -8,8 +8,9 @@ import FourOhFour from "@/pages/404";
 const Router = () => {
   return (
     <>
-      <Header />
       <BrowserRouter>
+        <Header />
+
         <Routes>
           <Route path="/" element={<Home />} />
 

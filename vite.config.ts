@@ -15,7 +15,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          yeezyOuttaHere: ["react", "react-dom", "react-hot-toast", "react-router"],
+          yeezyOuttaHere: [
+            "react",
+            "react-dom",
+            "react-hot-toast",
+            "react-router",
+          ],
           iGotMotion: [
             "motion/react",
             "@react-spring/web",
@@ -23,9 +28,9 @@ export default defineConfig({
             "@radix-ui/react-dialog",
             "@radix-ui/react-popover",
             "@radix-ui/react-slot",
-          ]
-        }
+          ],
+        },
       },
-    }
-  }
+    },
+  },
 });
