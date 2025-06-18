@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 export const AppContext = React.createContext<AppContextType>(null!);
 
 // i hate having to do const AppContext = useContext(AppContextNotReal), rather this!!
+// looking back on this, i used useAppContext ONCE. so far lmfaoo
 export const useAppContext = () => {
   const context = React.useContext(AppContext);
   if (!context) {

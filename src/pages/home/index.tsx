@@ -20,9 +20,10 @@ const Home = () => {
 
           <span className="text-xl !text-white/80">
             Supply your own music files and mix the vocals and instrumentals
-            together to make something new, tweak the volume, the pitch and
+            together to make something new; Tweak the volume, the pitch and
             more!
           </span>
+          
           <br />
           <br />
 
