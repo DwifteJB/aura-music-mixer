@@ -68,7 +68,7 @@ const Header = () => {
                   <Bell className="mr-4 cursor-pointer"></Bell>
 
                   {Context.notifications.length > 0 && (
-                    <span className="absolute  left-[13px] top-[8px] bg-red-500 text-white text-xs rounded-full px-1">
+                    <span className="absolute cursor-pointer left-[13px] top-[8px] bg-red-500 text-white text-xs rounded-full px-1">
                       {Context.notifications.length}
                     </span>
                   )}

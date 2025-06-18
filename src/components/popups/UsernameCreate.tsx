@@ -92,8 +92,8 @@ const UsernameCreate = ({
   };
 
   return (
-    <Dialog open={open}>
-      <DialogContent showCloseButton={false} className="bg-black">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="bg-black">
         <DialogHeader>
           <DialogTitle>Select your username!</DialogTitle>
           <DialogDescription className="text-sm">
