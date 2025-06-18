@@ -1,0 +1,19 @@
+services:
+  spleeter:
+    image: spleeter-cpu
+    build: .
+    ports:
+      - "5000:5000"
+    env_file:
+      - ../../.env # aka main env file
+    volumes:
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+      - ./temp:/app/temp
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           device_ids: ["0"]
+    #           capabilities: [gpu]
