@@ -12,6 +12,8 @@ import userRoutes from "./src/routes/user";
 
 import cookies from "cookie-parser";
 
+import prisma from "./src/lib/prisma";
+
 dotenv.config({
   path: "../.env",
 });
@@ -32,9 +34,56 @@ const SPLEETER_KEY =
 
 const jobUpdates = new Map();
 const connectedServices = new Map();
+const connectedUsers = new Map();
 
 const internalNamespace = io.of("/api/internal/socket");
 const userNamespace = io.of("/api/user/socket");
+
+userNamespace.use(async (socket, next) => {
+  const auth = socket.handshake.auth;
+  if (auth && auth.key) {
+    const user = await prisma.user.findUnique({
+      where: {
+        key: auth.key
+      }
+    })
+
+    if (!user) {
+      console.log(
+        "Unauthorized user connection attempt :(",
+        socket.handshake.auth,
+        socket.handshake.address,
+      );
+      return next(new Error("Unauthorized"));
+    }
+
+    socket.data.user = user;
+
+    connectedUsers.set(socket.id, {
+      socket: socket.id,
+      userId: user.id,
+    })
+
+    next();
+  } else {
+    console.log(
+      "Unauthorized user connection attempt :(",
+      socket.handshake.auth,
+      socket.handshake.address,
+    );
+    next(new Error("Unauthorized"));
+  }
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+    connectedUsers.delete(socket.id);
+  })
+
+
+})
+
+// either i have the user id sent within the request => back to user from spleeter
+// or i can have the user id stored in the actual request. probably better 1st one.
 
 internalNamespace.use((socket, next) => {
   const auth = socket.handshake.auth;
@@ -132,7 +181,7 @@ app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
       ? ipHeader[0]
       : req.socket.remoteAddress || "";
 
-  if (!ip) {
+  if (!ip) { // ??!!!?? no ip 
     next();
     return;
   }
