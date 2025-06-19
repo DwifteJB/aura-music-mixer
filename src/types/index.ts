@@ -1,3 +1,5 @@
+import { Socket } from "socket.io-client";
+
 export type AppContextType = {
   user?: User;
   notifications: Notification[];
@@ -7,6 +9,11 @@ export type AppContextType = {
 
   triedUserAuth: boolean;
 };
+
+export type CommunicationContextType = {
+  socket: Socket | null;
+  setSocket: (socket: Socket | null) => void;
+}
 
 export type User = {
   id: string;
@@ -20,3 +27,4 @@ export type Notification = {
   id: string;
   createdAt: string;
 };
+

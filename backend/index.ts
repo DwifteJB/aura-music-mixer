@@ -67,10 +67,9 @@ userNamespace.use(async (socket, next) => {
 
     socket.data.user = user;
 
-    connectedUsers.set(socket.id, {
-      socket: socket.id,
-      userId: user.id,
-    });
+    connectedUsers.set(user.id, socket.id);
+
+    console.log("Authenticated user connection:", user.id, socket.id);
 
     next();
   } else {
@@ -84,7 +83,13 @@ userNamespace.use(async (socket, next) => {
 
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
-    connectedUsers.delete(socket.id);
+    
+    const userWithSocket = Array.from(connectedUsers.entries()).find(([, id]) => id === socket.id);
+    if (userWithSocket) {
+      const [userId] = userWithSocket;
+      connectedUsers.delete(userId);
+      console.log("Removed user from connected users:", userId);
+    }
   });
 });
 
@@ -191,8 +196,6 @@ app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
 
   if (userLoginKey && userLoginKey.startsWith("Bearer ")) {
     userLoginKey = userLoginKey.replace("Bearer ", "");
-    
-
   }
 
   if (userLoginKey) {
