@@ -48,7 +48,8 @@ const Header = () => {
           </div>
           <div className="flex items-center w-1/3 justify-center">
             <img src="logo.png" className="aspect-square w-8 h-8 mr-2" />
-            <span
+            <img src="mixer-full.png" className="h-10" />
+            {/* <span
               style={{
                 fontFamily: "Inter, sans-serif",
                 fontSize: "24px",
@@ -57,7 +58,7 @@ const Header = () => {
               }}
             >
               auralitymixer
-            </span>
+            </span> */}
           </div>
           <div className="flex items-center w-1/3 justify-end">
             <Popover

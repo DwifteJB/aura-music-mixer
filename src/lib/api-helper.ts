@@ -1,5 +1,31 @@
 import type { User } from "@/types";
 
+export const whoAmI = async (key: string): Promise<User | null> => {
+  const res = await fetch(
+    `${import.meta.env.VITE_MAIN_SERVER_URL}/api/v1/user/whoami`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: key,
+      },
+      credentials: "include",
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch user data");
+  }
+
+  const data = await res.json();
+
+  if (data.user) {
+    return data.user;
+  } else {
+    return null;
+  }
+};
+
 export const getUserFromKey = async (key: string): Promise<User | null> => {
   const response = await fetch(
     `${import.meta.env.VITE_MAIN_SERVER_URL}/api/v1/user/whoami`,

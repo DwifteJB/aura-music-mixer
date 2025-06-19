@@ -23,7 +23,7 @@ const Home = () => {
             together to make something new; Tweak the volume, the pitch and
             more!
           </span>
-          
+
           <br />
           <br />
 

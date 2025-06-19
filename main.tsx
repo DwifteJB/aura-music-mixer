@@ -9,6 +9,8 @@ import AppContextProvider from "./src/components/AppContext";
 
 import WelcomeDialog from "./src/components/popups/WelcomePopup";
 
+
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Toaster

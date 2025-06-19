@@ -1,4 +1,6 @@
-# Aura Music Mixer
+# Aurality Mixer
+
+<img src="https://github.com/">
 
 A music mixing program that allows you to clash two songs together!
 

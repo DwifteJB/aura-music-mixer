@@ -52,7 +52,10 @@ const EnterKey = ({
 
           localStorage.setItem("key", res.key);
           localStorage.setItem("user", JSON.stringify(res));
-          localStorage.setItem("lastUpdatedUser", new Date().toISOString());
+          localStorage.setItem(
+            "lastUpdatedUser",
+            Number(new Date()).toString(),
+          );
 
           setLoggingIn(false);
           return resolve(res);

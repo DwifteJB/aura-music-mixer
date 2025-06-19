@@ -28,7 +28,7 @@ const WelcomePopup = () => {
       console.log("USER", Context.user);
       console.log("Tried User Auth", Context.triedUserAuth);
       setSeenBefore(Context.triedUserAuth && !!Context.user?.key);
-    }, 100);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [Context.triedUserAuth, Context.user]);

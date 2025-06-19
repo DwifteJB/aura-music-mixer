@@ -16,7 +16,9 @@ const userRoutes = (app: Express) => {
     return;
   });
   app.post("/api/v1/user/login", async (req: Request, res: Response) => {
-    const key = req.body.key as string;
+    const key = req.data?.authKey as string;
+
+    console.log("key gotten!", key);
 
     console.log("Login attempt with key:", key.trim());
 
@@ -112,7 +114,7 @@ const userRoutes = (app: Express) => {
     });
 
     res.cookie("key", key, {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production", // set to true in production
       sameSite: "strict",
       maxAge: 31536000,
@@ -129,7 +131,9 @@ const userRoutes = (app: Express) => {
   });
 
   app.get("/api/v1/user/myMixedSongs", async (req: Request, res: Response) => {
-    const key = req.cookies.key;
+    const key = req.data?.authKey as string;
+
+    console.log("key gotten!", key);
 
     if (!key) {
       res.status(401).json({ error: "Unauthorized" });
@@ -159,9 +163,11 @@ const userRoutes = (app: Express) => {
   });
 
   app.get("/api/v1/user/whoami", async (req: Request, res: Response) => {
-    // use "key" from cookies to get user id
+    // use "key" from cookies to get user id NO! use the new method :3
 
-    const key = req.cookies.key;
+    const key = req.data?.authKey as string;
+
+    console.log("key gotten!", key);
 
     if (!key) {
       res.status(401).json({ error: "Unauthorized" });

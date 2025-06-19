@@ -1,3 +1,4 @@
+import { whoAmI } from "@/lib/api-helper";
 import type { AppContextType, User, Notification } from "@/types";
 import React, { useEffect } from "react";
 
@@ -36,16 +37,37 @@ export const AppContextProvider: React.FC<React.PropsWithChildren> = ({
   ]);
 
   const AUTH_USER = async () => {
-    const lastUpdatedUser = Date.parse(
-      localStorage.getItem("lastUpdatedUser") || "0",
+    const lastUpdatedUser = new Date(
+      Number(localStorage.getItem("lastUpdatedUser") || 0),
     );
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
+    console.log("user", user);
+    console.log("lastUpdatedUser", lastUpdatedUser);
+
     if (user && lastUpdatedUser) {
-      if (lastUpdatedUser + 1000 * 60 * 60 > Date.now()) {
+      if (lastUpdatedUser.getTime() + 1000 * 60 * 60 > Date.now()) {
         console.log("set user", user);
         setUser(user);
         setTriedUserAuth(true);
+      } else {
+        console.log("user data is outdated, fetching new user data");
+        try {
+          const data = await whoAmI(user.key);
+
+          if (data) {
+            console.log("set user 1", data);
+            setUser(data);
+            localStorage.setItem("user", JSON.stringify(data));
+            localStorage.setItem("key", user.key);
+            localStorage.setItem(
+              "lastUpdatedUser",
+              Number(new Date()).toString(),
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching user:", error);
+        }
       }
     } else {
       const cookies = document.cookie.split("; ");
@@ -53,31 +75,20 @@ export const AppContextProvider: React.FC<React.PropsWithChildren> = ({
         .find((cookie) => cookie.startsWith("key="))
         ?.split("=")[1];
 
+      console.log("key in storage?", key);
+
       if (key) {
         try {
-          const res = await fetch(
-            `${import.meta.env.VITE_MAIN_SERVER_URL}/api/v1/user/whoami`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: key,
-              },
-              credentials: "include",
-            },
-          );
-
-          if (!res.ok) {
-            throw new Error("Failed to fetch user data");
-          }
-
-          const data = await res.json();
-          if (data.user) {
-            console.log("set user 2", data.user);
-            setUser(data.user);
-            localStorage.setItem("user", JSON.stringify(data.user));
+          const data = await whoAmI(key);
+          if (data) {
+            console.log("set user 2", data);
+            setUser(data);
+            localStorage.setItem("user", JSON.stringify(data));
             localStorage.setItem("key", key);
-            localStorage.setItem("lastUpdatedUser", new Date().toISOString());
+            localStorage.setItem(
+              "lastUpdatedUser",
+              Number(new Date()).toString(),
+            );
           }
         } catch (error) {
           console.error("Error fetching user:", error);

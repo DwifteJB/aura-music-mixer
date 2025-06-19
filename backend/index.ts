@@ -14,6 +14,14 @@ import cookies from "cookie-parser";
 
 import prisma from "./src/lib/prisma";
 
+declare module "express-serve-static-core" {
+  interface Request {
+    data?: {
+      authKey: string | string[];
+    };
+  }
+}
+
 dotenv.config({
   path: "../.env",
 });
@@ -44,9 +52,9 @@ userNamespace.use(async (socket, next) => {
   if (auth && auth.key) {
     const user = await prisma.user.findUnique({
       where: {
-        key: auth.key
-      }
-    })
+        key: auth.key,
+      },
+    });
 
     if (!user) {
       console.log(
@@ -62,7 +70,7 @@ userNamespace.use(async (socket, next) => {
     connectedUsers.set(socket.id, {
       socket: socket.id,
       userId: user.id,
-    })
+    });
 
     next();
   } else {
@@ -77,10 +85,8 @@ userNamespace.use(async (socket, next) => {
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
     connectedUsers.delete(socket.id);
-  })
-
-
-})
+  });
+});
 
 // either i have the user id sent within the request => back to user from spleeter
 // or i can have the user id stored in the actual request. probably better 1st one.
@@ -156,21 +162,46 @@ internalNamespace.on("connection", (socket) => {
 app.use(Express.json());
 app.use(cookies());
 
-const rateLimitMap = new Map<string, {
-  url: string;
-  count: number;
-  timestamp: number;
-}[]>();
+const rateLimitMap = new Map<
+  string,
+  {
+    url: string;
+    count: number;
+    timestamp: number;
+  }[]
+>();
 
 const routesToLimit = [
- {
-  url: "/api/user/upload",
-  count: 10, // max requests
-  timeWindow: 60 * 1000 * 2, // in milliseconds
- }
-]
+  {
+    url: "/api/user/upload",
+    count: 10, // max requests
+    timeWindow: 60 * 1000 * 2, // in milliseconds
+  },
+];
 
 app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
+  // set auth key as data
+
+  // this works if the domains are diff between the frontend and backend, use the req header instead!
+
+
+  let userLoginKey: string = req.cookies.key || req.headers.authorization;
+
+  console.log("key?", userLoginKey);
+
+  if (userLoginKey && userLoginKey.startsWith("Bearer ")) {
+    userLoginKey = userLoginKey.replace("Bearer ", "");
+    
+
+  }
+
+  if (userLoginKey) {
+    req.data = {
+      authKey: userLoginKey,
+    }
+
+    console.log("key! ", userLoginKey);
+  }
   // ratelimit
 
   const ipHeader = req.headers["CF-Connecting-IP"];
@@ -178,33 +209,44 @@ app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
     typeof ipHeader === "string"
       ? ipHeader
       : Array.isArray(ipHeader)
-      ? ipHeader[0]
-      : req.socket.remoteAddress || "";
+        ? ipHeader[0]
+        : req.socket.remoteAddress || "";
 
-  if (!ip) { // ??!!!?? no ip 
+  if (!ip) {
+    // ??!!!?? no ip
     next();
     return;
   }
 
-  if (req.headers["rmfosho-real-key"] === `Bearer ${process.env.SPLEETER_API_KEY}` ||
-      req.headers["rmfosho-real-key"] === process.env.SPLEETER_API_KEY) {
+  if (
+    req.headers["rmfosho-real-key"] ===
+      `Bearer ${process.env.SPLEETER_API_KEY}` ||
+    req.headers["rmfosho-real-key"] === process.env.SPLEETER_API_KEY
+  ) {
     next();
     return;
   }
 
   // ignore ws
-  if (req.url.startsWith("/api/internal/socket") || req.url.startsWith("/api/user/socket")) {
+  if (
+    req.url.startsWith("/api/internal/socket") ||
+    req.url.startsWith("/api/user/socket")
+  ) {
     next();
     return;
   }
 
-  const rateLimit = routesToLimit.find((route) => req.url.startsWith(route.url));
+  const rateLimit = routesToLimit.find((route) =>
+    req.url.startsWith(route.url),
+  );
   if (rateLimit) {
     const currentTime = Date.now();
     const userRateLimits = rateLimitMap.get(ip) || [];
 
     const validEntries = userRateLimits.filter(
-      (entry) => entry.url === rateLimit.url && currentTime - entry.timestamp < rateLimit.timeWindow
+      (entry) =>
+        entry.url === rateLimit.url &&
+        currentTime - entry.timestamp < rateLimit.timeWindow,
     );
 
     const currentCount = validEntries.length;
@@ -213,19 +255,19 @@ app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
         error: "Rate limit exceeded. Please try again later.",
       });
       return;
-
     }
 
-    validEntries.push({ url: rateLimit.url, count: currentCount + 1, timestamp: currentTime });
+    validEntries.push({
+      url: rateLimit.url,
+      count: currentCount + 1,
+      timestamp: currentTime,
+    });
     rateLimitMap.set(ip, validEntries);
   }
 
   next();
   return;
-
-
-  
-})
+});
 
 // cors
 app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
