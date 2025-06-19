@@ -4,7 +4,7 @@ import { Express, Request, Response } from "express";
 
 import prisma from "../lib/prisma";
 
-const useUserRoutes = (app: Express) => {
+const userRoutes = (app: Express) => {
   app.post("/api/v1/user/logout", async (req: Request, res: Response) => {
     res.clearCookie("key", {
       httpOnly: true,
@@ -185,4 +185,4 @@ const useUserRoutes = (app: Express) => {
   return true;
 };
 
-export default useUserRoutes;
+export default userRoutes;
