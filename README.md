@@ -41,6 +41,8 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/auraaura
 
 Yes, this project uses spleeter to split the songs into two tracks, instrumentals and vocals! This is all self hosted, which explains the really big rate limit, since im running this on-device, paying for the electricity and the heat that is produced.... I am not paying 10$/day just to run a website sadly, unless I can somehow make something back. Outside of that, co-pilot was used to speed up development, with the tab auto assistance.
 
+Since this is using a pre-built model of spleeter, **ANYTHING** you enter will **NOT** entered into AI training, I am mostly against training AI on creative mediums, such as photos, videos, books and songs that do not have the permission from the author themselves.
+
 This can all also be self-hosted if you would like to remove rate limits, host an instance or make tweaks, thats the love of open source. 
 
 #### Can I contribute?

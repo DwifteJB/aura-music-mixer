@@ -12,9 +12,11 @@ import { useAppContext } from "../AppContext";
 import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
 import { animated, useSpring } from "@react-spring/web";
 import { useNavigate } from "react-router";
+import { useCommunicationContext } from "../CommunicationContext";
 
 const Header = () => {
   const Context = useAppContext();
+  const CommunicationContext = useCommunicationContext();
   const navigate = useNavigate();
 
   const [spring, api] = useSpring(() => ({
@@ -75,9 +77,9 @@ const Header = () => {
                 <animated.div style={spring}>
                   <Bell className="mr-4 cursor-pointer"></Bell>
 
-                  {Context.notifications.length > 0 && (
+                  {CommunicationContext.notifications.length > 0 && (
                     <span className="absolute cursor-pointer left-[13px] top-[8px] bg-red-500 text-white text-xs rounded-full px-1">
-                      {Context.notifications.length}
+                      {CommunicationContext.notifications.length}
                     </span>
                   )}
                 </animated.div>
@@ -95,15 +97,15 @@ const Header = () => {
 
                   <div className="pt-2">
                     <div className="flex flex-col gap-2">
-                      {Context.notifications.length === 0 ? (
+                      {CommunicationContext.notifications.length === 0 ? (
                         <span className="text-sm ibm-plex-mono-regular text-gray-400">
                           You have no notifications.
                         </span>
                       ) : (
-                        Context.notifications.map((notification) => (
+                        CommunicationContext.notifications.map((notification) => (
                           <div className="border-white items-center justify-center p-2 border rounded-2xl">
                             <div className="flex  gap-2 p-2 ">
-                              <div className="w-1/5  h-full">
+                              <div className="w-1/3  h-full">
                                 {(() => {
                                   switch (notification.type) {
                                     case "pending":
@@ -136,13 +138,17 @@ const Header = () => {
                                 ).toLocaleString()}
                               </span>
                             </div>
+
+                            
                           </div>
                         ))
                       )}
 
-                      {Context.notifications.length > 0 && (
+                      {CommunicationContext.notifications.length > 0 && (
                         <div className="w-full items-center justify-center">
-                          <span className="text-xs !text-gray-400 cursor-pointer hover:text-white transition-all duration-200">
+                          <span onClick={() => {
+                            CommunicationContext.ClearNotifications();
+                          }} className="text-xs !text-gray-400 cursor-pointer transition-all duration-200 hover:!text-white transition-all duration-200">
                             Clear All
                           </span>
                         </div>
