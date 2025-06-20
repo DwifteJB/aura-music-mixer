@@ -13,6 +13,8 @@ import * as idf from "id3js";
 import { ID3Tag } from "id3js/lib/id3Tag";
 import { useCommunicationContext } from "@/components/CommunicationContext";
 
+import { motion } from "motion/react";
+
 interface SongDetails {
   title: string;
   image?: {
@@ -215,130 +217,175 @@ const MixerPage = () => {
     <div className="mt-6 justify-center items-center w-full">
       <div className="flex flex-col items-center justify-center">
         <h1 className="text-4xl tracking-tighter text-center mb-6">
-          mix mix mix!67
+          i needa figure out tf to put here
         </h1>
         <Card className="bg-black w-[80%]">
           <CardContent>
             <div className="flex flex-row justify-center items-center space-x-4">
-              <Card
-                onMouseEnter={() => setCardOneHovered(true)}
-                onMouseLeave={() => setCardOneHovered(false)}
-                className="min-w-[100px] md:min-w-[200px] sm:min-w-[125px] lg:min-w-[250px] aspect-square p-12 flex items-center justify-center relative overflow-hidden transition-all duration-300"
-                style={{
-                  cursor: "pointer",
+              <motion.div
+                animate={{
+                  rotate: cardOneHovered ? -2 : 0,
+                  scale: cardOneHovered ? 1.05 : 1,
+                }}
+                className="p-3"
+                transition={{
+                  type: "tween",
+                  stiffness: 300,
+                  damping: 20,
+                  mass: 0.5,
                 }}
               >
-                <div
-                  className="absolute inset-0 transition-all duration-300"
+                <Card
+                  onMouseEnter={() => setCardOneHovered(true)}
+                  onMouseLeave={() => setCardOneHovered(false)}
+                  className="min-w-[100px] md:min-w-[200px] sm:min-w-[125px] lg:min-w-[250px] aspect-square p-12 flex items-center justify-center relative overflow-hidden transition-all duration-300"
                   style={{
-                    backgroundImage: songOneImageUrl
-                      ? `url(${songOneImageUrl})`
-                      : "url('/grid.png')",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    filter:
-                      cardOneHovered && !songOne?.image ? "blur(4px)" : "none",
+                    cursor: "pointer",
                   }}
-                />
-                {songOne && (
-                  <div className="absolute top-0 left-0 right-0 p-3 bg-black/70 backdrop-blur-sm z-10">
-                    <p className="text-white text-sm font-medium truncate">
-                      {songOne.title}
-                    </p>
-                  </div>
-                )}
-                <div
-                  className={`absolute inset-0 flex items-center justify-center transition-all duration-300 z-10 ${
-                    cardOneHovered
-                      ? "opacity-100 scale-100"
-                      : "opacity-0 scale-95"
-                  }`}
                 >
                   <div
-                    className="text-center p-4 rounded-lg bg-black/20 backdrop-blur-sm shadow-2xl border border-white/10"
-                    style={{ textShadow: "0 0 20px rgba(255,255,255,0.5)" }}
+                    className="absolute inset-0 transition-all duration-300"
+                    style={{
+                      backgroundImage: songOneImageUrl
+                        ? `url(${songOneImageUrl})`
+                        : "url('/grid.png')",
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      filter:
+                        cardOneHovered && !songOne?.image
+                          ? "blur(4px)"
+                          : "none",
+                    }}
+                  />
+                  {songOne && (
+                    <div className="absolute top-0 left-0 right-0 p-3 bg-black/70 backdrop-blur-sm z-10">
+                      <p className="text-white text-sm font-medium truncate">
+                        {songOne.title}
+                      </p>
+                    </div>
+                  )}
+                  <div
+                    className={`absolute inset-0 flex items-center justify-center transition-all duration-300 z-10 ${
+                      cardOneHovered
+                        ? "opacity-100 scale-100"
+                        : "opacity-0 scale-95"
+                    }`}
                   >
-                    <CardTitle className="text-white text-lg mb-2">
-                      Upload your song
-                    </CardTitle>
-                    <CardDescription className="text-gray-200">
-                      Click to upload a file
-                    </CardDescription>
+                    <div
+                      className="text-center p-4 rounded-lg bg-black/20 backdrop-blur-sm shadow-2xl border border-white/10"
+                      style={{ textShadow: "0 0 20px rgba(255,255,255,0.5)" }}
+                    >
+                      <CardTitle className="text-white text-lg mb-2">
+                        Upload your song
+                      </CardTitle>
+                      <CardDescription className="text-gray-200">
+                        Click to upload a file
+                      </CardDescription>
+                    </div>
                   </div>
-                </div>
-                <input
-                  type="file"
-                  accept="audio/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer z-20"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      onFilePick("one", e.target.files[0]);
-                    }
-                  }}
-                  tabIndex={-1}
-                  aria-label="Upload song one"
-                />
-              </Card>
-              <ArrowLeftRight size={128} strokeWidth={1} />
-              <Card
-                onMouseEnter={() => setCardTwoHovered(true)}
-                onMouseLeave={() => setCardTwoHovered(false)}
-                className="min-w-[100px] md:min-w-[200px] sm:min-w-[125px] lg:min-w-[250px] aspect-square p-12 flex items-center justify-center relative overflow-hidden transition-all duration-300"
-                style={{
-                  cursor: "pointer",
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    className="absolute inset-0 opacity-0 cursor-pointer z-20"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        onFilePick("one", e.target.files[0]);
+                      }
+                    }}
+                    tabIndex={-1}
+                    aria-label="Upload song one"
+                  />
+                </Card>
+              </motion.div>
+              <motion.div animate={{
+                rotate: cardOneHovered || cardTwoHovered ? 0 : 2,
+                scale: cardOneHovered || cardTwoHovered ? 1 : 1.05,
+              }}
+                className="flex items-center justify-center"
+                transition={{
+                  type: "tween",
+                  stiffness: 300,
+                  damping: 20,
+                  mass: 0.5,
+              }}>
+                <ArrowLeftRight size={128} strokeWidth={1} />
+              </motion.div>
+
+              <motion.div
+                animate={{
+                  rotate: cardTwoHovered ? -2 : 0,
+                  scale: cardTwoHovered ? 1.05 : 1,
+                }}
+                className="p-3"
+                transition={{
+                  type: "tween",
+                  stiffness: 300,
+                  damping: 20,
+                  mass: 0.5,
                 }}
               >
-                <div
-                  className="absolute inset-0 transition-all duration-300"
+                <Card
+                  onMouseEnter={() => setCardTwoHovered(true)}
+                  onMouseLeave={() => setCardTwoHovered(false)}
+                  className="min-w-[100px] md:min-w-[200px] sm:min-w-[125px] lg:min-w-[250px] aspect-square p-12 flex items-center justify-center relative overflow-hidden transition-all duration-300"
                   style={{
-                    backgroundImage: songTwoImageUrl
-                      ? `url(${songTwoImageUrl})`
-                      : "url('/grid.png')",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    filter:
-                      cardTwoHovered && !songTwo?.image ? "blur(4px)" : "none",
+                    cursor: "pointer",
                   }}
-                />
-                {songTwo && (
-                  <div className="absolute top-0 left-0 right-0 p-3 bg-black/70 backdrop-blur-sm z-10">
-                    <p className="text-white text-sm font-medium truncate">
-                      {songTwo.title}
-                    </p>
-                  </div>
-                )}
-                <div
-                  className={`absolute inset-0 flex items-center justify-center transition-all duration-300 z-10 ${
-                    cardTwoHovered
-                      ? "opacity-100 scale-100"
-                      : "opacity-0 scale-95"
-                  }`}
                 >
                   <div
-                    className="text-center p-4 rounded-lg bg-black/20 backdrop-blur-sm shadow-2xl border border-white/10"
-                    style={{ textShadow: "0 0 20px rgba(255,255,255,0.5)" }}
+                    className="absolute inset-0 transition-all duration-300"
+                    style={{
+                      backgroundImage: songTwoImageUrl
+                        ? `url(${songTwoImageUrl})`
+                        : "url('/grid.png')",
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      filter:
+                        cardTwoHovered && !songTwo?.image
+                          ? "blur(4px)"
+                          : "none",
+                    }}
+                  />
+                  {songTwo && (
+                    <div className="absolute top-0 left-0 right-0 p-3 bg-black/70 backdrop-blur-sm z-10">
+                      <p className="text-white text-sm font-medium truncate">
+                        {songTwo.title}
+                      </p>
+                    </div>
+                  )}
+                  <div
+                    className={`absolute inset-0 flex items-center justify-center transition-all duration-300 z-10 ${
+                      cardTwoHovered
+                        ? "opacity-100 scale-100"
+                        : "opacity-0 scale-95"
+                    }`}
                   >
-                    <CardTitle className="text-white text-lg mb-2">
-                      Upload your song
-                    </CardTitle>
-                    <CardDescription className="text-gray-200">
-                      Click to upload a file
-                    </CardDescription>
+                    <div
+                      className="text-center p-4 rounded-lg bg-black/20 backdrop-blur-sm shadow-2xl border border-white/10"
+                      style={{ textShadow: "0 0 20px rgba(255,255,255,0.5)" }}
+                    >
+                      <CardTitle className="text-white text-lg mb-2">
+                        Upload your song
+                      </CardTitle>
+                      <CardDescription className="text-gray-200">
+                        Click to upload a file
+                      </CardDescription>
+                    </div>
                   </div>
-                </div>
-                <input
-                  type="file"
-                  accept="audio/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer z-20"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      onFilePick("two", e.target.files[0]);
-                    }
-                  }}
-                  tabIndex={-1}
-                  aria-label="Upload song two"
-                />
-              </Card>
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    className="absolute inset-0 opacity-0 cursor-pointer z-20"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        onFilePick("two", e.target.files[0]);
+                      }
+                    }}
+                    tabIndex={-1}
+                    aria-label="Upload song two"
+                  />
+                </Card>
+              </motion.div>
             </div>
             <div className="mt-4 text-center items-center w-full justify-center">
               <Button

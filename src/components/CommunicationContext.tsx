@@ -44,7 +44,7 @@ export const CommunicationContextProvider: React.FC<{
           id: `socket-connect`,
           createdAt: new Date().toISOString(),
         },
-      ])
+      ]);
       console.log("Connected to socket server");
       setSocket(startSocket);
     });
@@ -68,7 +68,6 @@ export const CommunicationContextProvider: React.FC<{
       );
 
       if (existingNotification) {
-
         setNotifications((prev) =>
           prev.map((n) =>
             n.id === notification.id ? { ...n, ...notification } : n,
@@ -77,8 +76,8 @@ export const CommunicationContextProvider: React.FC<{
         return;
       }
 
-      setNotifications((prev) => [...prev, notification]);  
-    })
+      setNotifications((prev) => [...prev, notification]);
+    });
 
     // startSocket.connect();
 
@@ -87,7 +86,7 @@ export const CommunicationContextProvider: React.FC<{
 
   const ClearNotifications = () => {
     setNotifications([]);
-  }
+  };
 
   useEffect(() => {
     if (!MainContext.triedUserAuth || !MainContext.user) {
@@ -103,7 +102,9 @@ export const CommunicationContextProvider: React.FC<{
   }, [MainContext.user, MainContext.triedUserAuth]);
 
   return (
-    <CommunicationContext.Provider value={{ socket, setSocket, notifications, ClearNotifications }}>
+    <CommunicationContext.Provider
+      value={{ socket, setSocket, notifications, ClearNotifications }}
+    >
       {children}
     </CommunicationContext.Provider>
   );

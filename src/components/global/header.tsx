@@ -102,53 +102,56 @@ const Header = () => {
                           You have no notifications.
                         </span>
                       ) : (
-                        CommunicationContext.notifications.map((notification) => (
-                          <div className="border-white items-center justify-center p-2 border rounded-2xl">
-                            <div className="flex  gap-2 p-2 ">
-                              <div className="w-1/3  h-full">
-                                {(() => {
-                                  switch (notification.type) {
-                                    case "pending":
-                                      return <Info size={32} color="blue" />;
-                                    case "info":
-                                      return <Info size={32} color="white" />;
-                                    case "error":
-                                      return (
-                                        <AlertTriangle
-                                          size={32}
-                                          color="#F80F3A"
-                                        />
-                                      );
-                                    default:
-                                      return <Bell size={32} />;
-                                  }
-                                })()}
+                        CommunicationContext.notifications.map(
+                          (notification) => (
+                            <div className="border-white items-center justify-center p-2 border rounded-2xl">
+                              <div className="flex  gap-2 p-2 ">
+                                <div className="w-1/3  h-full">
+                                  {(() => {
+                                    switch (notification.type) {
+                                      case "pending":
+                                        return <Info size={32} color="blue" />;
+                                      case "info":
+                                        return <Info size={32} color="white" />;
+                                      case "error":
+                                        return (
+                                          <AlertTriangle
+                                            size={32}
+                                            color="#F80F3A"
+                                          />
+                                        );
+                                      default:
+                                        return <Bell size={32} />;
+                                    }
+                                  })()}
+                                </div>
+                                <div>
+                                  <span className="text-sm ibm-plex-mono-regular tracking-tight">
+                                    {notification.message}
+                                  </span>
+                                </div>
                               </div>
-                              <div>
-                                <span className="text-sm ibm-plex-mono-regular tracking-tight">
-                                  {notification.message}
+
+                              <div className="w-full items-center justify-center flex mt-2">
+                                <span className="text-xs ibm-plex-mono-regular !text-gray-400">
+                                  {new Date(
+                                    notification.createdAt,
+                                  ).toLocaleString()}
                                 </span>
                               </div>
                             </div>
-
-                            <div className="w-full items-center justify-center flex mt-2">
-                              <span className="text-xs ibm-plex-mono-regular !text-gray-400">
-                                {new Date(
-                                  notification.createdAt,
-                                ).toLocaleString()}
-                              </span>
-                            </div>
-
-                            
-                          </div>
-                        ))
+                          ),
+                        )
                       )}
 
                       {CommunicationContext.notifications.length > 0 && (
                         <div className="w-full items-center justify-center">
-                          <span onClick={() => {
-                            CommunicationContext.ClearNotifications();
-                          }} className="text-xs !text-gray-400 cursor-pointer transition-all duration-200 hover:!text-white transition-all duration-200">
+                          <span
+                            onClick={() => {
+                              CommunicationContext.ClearNotifications();
+                            }}
+                            className="text-xs !text-gray-400 cursor-pointer transition-all duration-200 hover:!text-white transition-all duration-200"
+                          >
                             Clear All
                           </span>
                         </div>

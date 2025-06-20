@@ -5,7 +5,6 @@ export type AppContextType = {
 
   setUser: (user: User) => void;
 
-
   triedUserAuth: boolean;
 };
 
@@ -16,7 +15,6 @@ export type CommunicationContextType = {
   notifications: Notification[];
   ClearNotifications: () => void;
 };
-
 
 export type User = {
   id: string;
