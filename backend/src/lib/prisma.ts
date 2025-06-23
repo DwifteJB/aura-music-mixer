@@ -4,8 +4,6 @@ let prisma;
 
 prisma = new PrismaClient();
 
-prisma.$connect().then(() => {
-  console.log("logged into prisma!");
-});
+prisma.$connect().then(() => {});
 
 export default prisma as PrismaClient;

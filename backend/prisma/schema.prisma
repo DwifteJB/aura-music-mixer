@@ -23,6 +23,23 @@ model User {
   name      String
 
   mashedSongs MashedSong[]
+  jobs       Job[]
+}
+model Job {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  jobIds        String[]  
+  title         String
+  status        String    @default("processing")
+  totalJobs     Int       @default(2)
+  completedJobs Int       @default(0)
+  results       Json?     
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([status])
 }
 
 

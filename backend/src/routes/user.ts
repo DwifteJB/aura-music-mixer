@@ -56,7 +56,7 @@ const userRoutes = (app: Express) => {
     });
     return;
   });
-  
+
   app.post("/api/v1/user/create", async (req: Request, res: Response) => {
     let username = req.body.username as string;
 

@@ -54,6 +54,8 @@ export const CommunicationContextProvider: React.FC<{
       setSocket(null);
     });
 
+
+
     startSocket.on("disconnect", () => {
       console.log("Disconnected from socket server");
       // RECONNECT!
