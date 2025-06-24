@@ -291,15 +291,18 @@ const MixerPage = () => {
     );
   }, [CommunicationContext.socket]);
 
-  if (!CommunicationContext.socket) {
+  if (!CommunicationContext.socket?.connected) {
     return (
       <div className="mt-6 justify-center items-center w-full">
         <div className="flex flex-col items-center justify-center">
           <h1 className="text-4xl tracking-tighter text-center mb-6">
             Connecting to the server...
           </h1>
-          <p className="text-lg text-gray-500">
+          <p className="text-lg text-gray-500 text-center">
             Please wait while we establish a connection.
+
+            <br />
+             If this takes too long, try to refresh or see if websockets are enabled in your browser. Otherwise, the server is down.
           </p>
         </div>
       </div>

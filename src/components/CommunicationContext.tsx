@@ -5,6 +5,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAppContext } from "./AppContext";
 import { Notification } from "@/types";
+import toast from "react-hot-toast";
 
 const CommunicationContext = createContext<CommunicationContextType>(null!);
 
@@ -14,6 +15,20 @@ export const CommunicationContextProvider: React.FC<{
   const MainContext = useAppContext();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [serverDown, setServerDown] = useState<boolean | null>(null);
+
+  const isServerDown = async () => {
+    try {
+      const res = await fetch(import.meta.env.VITE_MAIN_SERVER_URL);
+    if (!res.ok) {
+      setServerDown(true);
+    } else {
+      setServerDown(false);
+    }
+    } catch {
+      setServerDown(true);
+    }
+  }
 
   const connectToSocket = (userKey: string) => {
     const socketURL = import.meta.env.VITE_WS_URL;
@@ -91,6 +106,32 @@ export const CommunicationContextProvider: React.FC<{
 
     setSocket(startSocket);
   };
+
+  useEffect(() => {
+    if (serverDown === null) {
+      isServerDown();
+    } else if (serverDown) {
+      toast.error(
+        "The server is currently down. Please try again later.",
+        {
+          duration: 200000
+        }
+      );
+      setNotifications((prev) => [
+        ...prev,
+        {
+          type: "error",
+          message: "The server is currently down. Please try again later.",
+          id: `server-down`,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    } else {
+      setNotifications((prev) =>
+        prev.filter((n) => n.id !== "server-down"),
+      );
+    }
+  }, [serverDown]);
 
   const ClearNotifications = () => {
     setNotifications([]);
