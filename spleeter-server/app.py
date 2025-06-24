@@ -70,19 +70,19 @@ separator = None
 @sio.event
 def connect():
     logger.info("connected to main backend via, ws")
-    sio.emit('service_connected', {'service': 'spleeter'})
+    sio.emit('service_connected', {'service': 'spleeter'}, namespace='/api/internal/socket')
 
 @sio.event
 def disconnect():
     logger.info("!!! disconnected from main server :(")
 
-# @sio.event
-# def connect_error(data):
-    # logger.error(f"could not connect to main server: {data}")
+@sio.event
+def connect_error(data):
+    logger.error(f"could not connect to main server: {data} :()")
 
 def connect_to_main_server():
     try:
-        sio.connect(CALLBACK_URL, auth={'key': SPLEETER_KEY}, socketio_path="/api/internal/socket")
+        sio.connect(CALLBACK_URL.replace("http://", "ws://").replace("https://", "wss://").replace("localhost", "host.docker.internal") + "/api/internal/socket", auth={'key': SPLEETER_KEY}, transports=["websocket", "polling"], namespaces=["/api/internal/socket"])
     except Exception as e:
         # logger.error(f"failed connecting: {e}")
         threading.Timer(5.0, connect_to_main_server).start()
@@ -100,7 +100,7 @@ def send_ws_message(job_id, status, progress=None, vocals_url=None, instrumental
         }
         
         if sio.connected:
-            sio.emit('job_update', data)
+            sio.emit('job_update', data, namespace='/api/internal/socket')
             logger.info(f"sent ws for job {job_id}: {status}")
         else:
             logger.warning(f"NO WS!!")
@@ -264,10 +264,13 @@ def submit_job():
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
         
-        if not allowed_file(file.filename):
-            return jsonify({
-                'error': f'File type not allowed. Supported: {", ".join(ALLOWED_EXTENSIONS)}'
-            }), 400
+        # if not allowed_file(file.filename):
+        #     return jsonify({
+        #         'error': f'File type not allowed. Supported: {", ".join(ALLOWED_EXTENSIONS)}'
+        #     }), 400
+
+        print(f"file: {file.filename}")
+        logger.info(f"Received file: {file.filename}")
         
         job_id = str(uuid.uuid4())
         
@@ -381,7 +384,6 @@ if __name__ == '__main__':
     get_separator()
     logger.info("Spleeter separator pre-loaded successfully")
 
-    connect_to_main_server()
 
     if SPLEETER_KEY == 'your_spleeter_key_here':
         logger.warning("Using default Spleeter key, please set SPLEETER_SERVER_KEY environment variable for production use.")
@@ -394,5 +396,11 @@ if __name__ == '__main__':
                     KEY: {SPLEETER_KEY}
                 
                 """)
-    
+
+
+
+    logger.info("connecting to main server")
+    connect_to_main_server()
+
     app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+

@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, Blend } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 
 import * as idf from "id3js";
@@ -14,6 +14,10 @@ import { ID3Tag } from "id3js/lib/id3Tag";
 import { useCommunicationContext } from "@/components/CommunicationContext";
 
 import { motion } from "motion/react";
+import toast from "react-hot-toast";
+
+import { useAppContext } from "@/components/AppContext";
+import { MixerJobCreated } from "@/types";
 
 interface SongDetails {
   title: string;
@@ -25,6 +29,9 @@ interface SongDetails {
   filename: string;
   size: string;
   type: string;
+  jobId?: string;
+  jobFinished?: boolean;
+  jobProgress?: number;
 }
 
 interface TagWithImage extends ID3Tag {
@@ -36,7 +43,13 @@ interface TagWithImage extends ID3Tag {
   }[];
 }
 
-const RateLimitCard = ({ time }: { time: Date }) => {
+const RateLimitCard = ({
+  time,
+  setRateLimitTime,
+}: {
+  time: Date;
+  setRateLimitTime: (time: Date | null) => void;
+}) => {
   const [remainingTime, setRemainingTime] = useState(
     new Date(time.getTime() - new Date().getTime()),
   );
@@ -49,6 +62,7 @@ const RateLimitCard = ({ time }: { time: Date }) => {
     console.log("diff", diff, time, now);
     if (diff <= 0) {
       setRemainingTime(new Date(0));
+      setRateLimitTime(null);
     } else {
       setRemainingTime(new Date(diff));
     }
@@ -60,6 +74,7 @@ const RateLimitCard = ({ time }: { time: Date }) => {
       if (diff <= 0) {
         clearInterval(interval);
         setRemainingTime(new Date(0));
+        setRateLimitTime(null);
       } else {
         setRemainingTime(new Date(diff));
       }
@@ -81,8 +96,12 @@ const RateLimitCard = ({ time }: { time: Date }) => {
     </Card>
   );
 };
+
 const MixerPage = () => {
   const CommunicationContext = useCommunicationContext();
+  const Context = useAppContext();
+
+  const [mixing, setMixing] = useState(false);
 
   const [cardOneHovered, setCardOneHovered] = useState(false);
   const [cardTwoHovered, setCardTwoHovered] = useState(false);
@@ -189,6 +208,89 @@ const MixerPage = () => {
     console.log("set", songType, "with file", file);
   };
 
+  const sendMixRequest = async () => {
+    if (!songOne || !songTwo) {
+      toast.error("Please select both songs before mixing. :P");
+      return;
+    }
+
+    if (mixing) {
+      return;
+    }
+
+    setMixing(true);
+
+    const formData = new FormData();
+    formData.append("audio", songOne.file);
+    formData.append("audio", songTwo.file);
+
+    const res = await fetch(
+      `${import.meta.env.VITE_MAIN_SERVER_URL}/api/v1/user/mixer`,
+      {
+        method: "POST",
+        body: formData,
+        headers: {
+          Authorization: `${Context.user?.key || ""}`,
+        },
+      },
+    );
+
+    console.log(res);
+
+    const data = await res.json();
+
+    if (data.error && data.retryAfter) {
+      // data.retryAfter is in seconds
+      toast.error(
+        `You are rate limited! Please wait ${data.retryAfter} seconds before mixing again.`,
+      );
+      setRateLimitTime(new Date(Date.now() + data.retryAfter * 1000));
+      setMixing(false);
+      return;
+    }
+
+    console.log(data);
+  };
+
+  useEffect(() => {
+    if (!CommunicationContext.socket) {
+      return;
+    }
+
+    CommunicationContext.socket.on(
+      "mixer_job_created",
+      (data: MixerJobCreated) => {
+        console.log("Mixer job created:", data);
+
+        for (const job of data.spleeter_jobs) {
+          if (job.filename === songOne?.filename) {
+            setSongOne((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    jobId: job.job_id,
+                    jobFinished: false,
+                    jobProgress: 0,
+                  }
+                : prev,
+            );
+          } else if (job.filename === songTwo?.filename) {
+            setSongTwo((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    jobId: job.job_id,
+                    jobFinished: false,
+                    jobProgress: 0,
+                  }
+                : prev,
+            );
+          }
+        }
+      },
+    );
+  }, [CommunicationContext.socket]);
+
   if (!CommunicationContext.socket) {
     return (
       <div className="mt-6 justify-center items-center w-full">
@@ -208,7 +310,10 @@ const MixerPage = () => {
     return (
       <div className="mt-6 justify-center items-center w-full">
         <div className="flex flex-col items-center justify-center">
-          <RateLimitCard time={rateLimitTime} />
+          <RateLimitCard
+            time={rateLimitTime}
+            setRateLimitTime={setRateLimitTime}
+          />
         </div>
       </div>
     );
@@ -275,12 +380,28 @@ const MixerPage = () => {
                       className="text-center p-4 rounded-lg bg-black/20 backdrop-blur-sm shadow-2xl border border-white/10"
                       style={{ textShadow: "0 0 20px rgba(255,255,255,0.5)" }}
                     >
-                      <CardTitle className="text-white text-lg mb-2">
-                        Upload your song
-                      </CardTitle>
-                      <CardDescription className="text-gray-200">
-                        Click to upload a file
-                      </CardDescription>
+                      {!mixing ? (
+                        <>
+                          <CardTitle className="text-white text-lg mb-2">
+                            Upload your song
+                          </CardTitle>
+                          <CardDescription className="text-gray-200">
+                            Click to upload a file
+                          </CardDescription>
+                        </>
+                      ) : (
+                        <>
+                          <CardTitle className="text-white text-lg mb-2">
+                            Mixing...
+                          </CardTitle>
+                          <CardDescription className="text-gray-200">
+                            Progress:{" "}
+                            {songOne?.jobProgress
+                              ? `${songOne.jobProgress}%`
+                              : "0%"}
+                          </CardDescription>
+                        </>
+                      )}
                     </div>
                   </div>
                   <input
@@ -297,19 +418,41 @@ const MixerPage = () => {
                   />
                 </Card>
               </motion.div>
-              <motion.div animate={{
-                rotate: cardOneHovered || cardTwoHovered ? 0 : 2,
-                scale: cardOneHovered || cardTwoHovered ? 1 : 1.05,
-              }}
-                className="flex items-center justify-center"
-                transition={{
-                  type: "tween",
-                  stiffness: 300,
-                  damping: 20,
-                  mass: 0.5,
-              }}>
-                <ArrowLeftRight size={128} strokeWidth={1} />
-              </motion.div>
+              {!mixing ? (
+                <motion.div
+                  animate={{
+                    rotate: cardOneHovered || cardTwoHovered ? 0 : 2,
+                    scale: cardOneHovered || cardTwoHovered ? 1 : 1.05,
+                  }}
+                  className="flex items-center justify-center"
+                  transition={{
+                    type: "tween",
+                    stiffness: 300,
+                    damping: 20,
+                    mass: 0.5,
+                  }}
+                >
+                  <ArrowLeftRight size={128} strokeWidth={1} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  animate={{
+                    rotate: 360,
+                  }}
+                  className="flex items-center justify-center"
+                  transition={{
+                    type: "tween",
+                    stiffness: 300,
+                    damping: 20,
+                    mass: 0.5,
+                    repeat: Infinity,
+                    repeatType: "loop",
+                    duration: 1.2,
+                  }}
+                >
+                  <Blend size={128} strokeWidth={1} />
+                </motion.div>
+              )}
 
               <motion.div
                 animate={{
@@ -364,17 +507,33 @@ const MixerPage = () => {
                       className="text-center p-4 rounded-lg bg-black/20 backdrop-blur-sm shadow-2xl border border-white/10"
                       style={{ textShadow: "0 0 20px rgba(255,255,255,0.5)" }}
                     >
-                      <CardTitle className="text-white text-lg mb-2">
-                        Upload your song
-                      </CardTitle>
-                      <CardDescription className="text-gray-200">
-                        Click to upload a file
-                      </CardDescription>
+                      {!mixing ? (
+                        <>
+                          <CardTitle className="text-white text-lg mb-2">
+                            Upload your song
+                          </CardTitle>
+                          <CardDescription className="text-gray-200">
+                            Click to upload a file
+                          </CardDescription>
+                        </>
+                      ) : (
+                        <>
+                          <CardTitle className="text-white text-lg mb-2">
+                            Mixing...
+                          </CardTitle>
+                          <CardDescription className="text-gray-200">
+                            Progress:{" "}
+                            {songTwo?.jobProgress
+                              ? `${songTwo.jobProgress}%`
+                              : "0%"}
+                          </CardDescription>
+                        </>
+                      )}
                     </div>
                   </div>
                   <input
                     type="file"
-                    accept="audio/*"
+                    accept="audio/mp3,audio/wav,audio/ogg,audio/flac,audio/aac,audio/m4a,audio/wma"
                     className="absolute inset-0 opacity-0 cursor-pointer z-20"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
@@ -387,15 +546,28 @@ const MixerPage = () => {
                 </Card>
               </motion.div>
             </div>
-            <div className="mt-4 text-center items-center w-full justify-center">
-              <Button
-                disabled={!songOne && !songTwo}
-                size={"lg"}
-                className="bg-[var(--text-branding)] hover:bg-[#ee31ee]/80 text-white w-[30%]"
-              >
-                <span className="text-lg ">Mix!</span>
-              </Button>
-            </div>
+            {!mixing && (
+              <>
+                <div className="mt-4 text-center items-center w-full justify-center">
+                  <Button
+                    disabled={!songOne && !songTwo && !mixing}
+                    size={"lg"}
+                    className="bg-[var(--text-branding)] hover:bg-[#ee31ee]/80 text-white w-[30%]"
+                    onClick={() => {
+                      sendMixRequest();
+                    }}
+                  >
+                    <span className="text-lg ">Mix!</span>
+                  </Button>
+                </div>
+
+                <div className="text-center mt-2">
+                  <span className="text-sm">
+                    Supported: wma, aac, m4a, flac, wav, mp3, ogg
+                  </span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 

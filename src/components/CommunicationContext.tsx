@@ -54,13 +54,19 @@ export const CommunicationContextProvider: React.FC<{
       setSocket(null);
     });
 
-
-
     startSocket.on("disconnect", () => {
       console.log("Disconnected from socket server");
       // RECONNECT!
       startSocket.connect();
       // setSocket(null);
+    });
+
+    startSocket.on("mixer_job_created", (data) => {
+      console.log("Mixer job created:", data);
+    });
+
+    startSocket.on("mixer_job_progress", (data) => {
+      console.log("Mixer job progress:", data);
     });
 
     startSocket.on("notification", (notification: Notification) => {

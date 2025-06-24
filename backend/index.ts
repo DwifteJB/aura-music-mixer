@@ -103,6 +103,7 @@ userNamespace.use(async (socket, next) => {
 internalNamespace.use((socket, next) => {
   const auth = socket.handshake.auth;
   if (auth && auth.key === SPLEETER_KEY) {
+    console.log("socket tryna connect...", socket.handshake.auth);
     next();
   } else {
     console.log(
@@ -231,6 +232,27 @@ const upload = multer({
 app.use(Express.json());
 app.use(cookies());
 
+// cors
+app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
+  const origin = req.headers.origin;
+  if (req.headers.origin) {
+    if (
+      origin === process.env.FRONTEND_URL ||
+      origin === process.env.SPLEETER_API_URL
+    ) {
+      console.log("CORS: Allowing origin", origin);
+      res.header("Access-Control-Allow-Origin", origin);
+    } else {
+      res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+    }
+  }
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
+
+  next();
+});
+
 const rateLimitMap = new Map<
   string,
   {
@@ -255,8 +277,6 @@ app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
 
   let userLoginKey: string = req.cookies.key || req.headers.authorization;
 
-  console.log("key?", userLoginKey);
-
   if (userLoginKey && userLoginKey.startsWith("Bearer ")) {
     userLoginKey = userLoginKey.replace("Bearer ", "");
   }
@@ -265,10 +285,13 @@ app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
     req.data = {
       authKey: userLoginKey,
     };
-
-    console.log("key! ", userLoginKey);
   }
   // ratelimit
+
+  if (req.method === "OPTIONS") {
+    next();
+    return;
+  }
 
   const ipHeader = req.headers["CF-Connecting-IP"];
   const ip =
@@ -285,10 +308,12 @@ app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
   }
 
   if (
-    req.headers["rmfosho-real-key"] ===
+    req.headers["rmfosho-real-key"] &&
+    (req.headers["rmfosho-real-key"] ===
       `Bearer ${process.env.SPLEETER_API_KEY}` ||
-    req.headers["rmfosho-real-key"] === process.env.SPLEETER_API_KEY
+      req.headers["rmfosho-real-key"] === process.env.SPLEETER_API_KEY)
   ) {
+    console.log("Ignoring rate limit for Spleeter API key");
     next();
     return;
   }
@@ -298,13 +323,19 @@ app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
     req.url.startsWith("/api/internal/socket") ||
     req.url.startsWith("/api/user/socket")
   ) {
+    console.log("Ignoring WebSocket connection for rate limiting");
     next();
     return;
   }
 
+  // if options, ignore
+
   const rateLimit = routesToLimit.find((route) =>
     req.url.startsWith(route.url),
   );
+
+  console.log("ratelimit", rateLimit);
+
   if (rateLimit) {
     const currentTime = Date.now();
     const userRateLimits = rateLimitMap.get(ip) || [];
@@ -319,6 +350,10 @@ app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
     if (currentCount >= rateLimit.count) {
       res.status(429).json({
         error: "Rate limit exceeded. Please try again later.",
+        retryAfter: Math.ceil(
+          (rateLimit.timeWindow - (currentTime - validEntries[0].timestamp)) /
+            1000,
+        ),
       });
       return;
     }
@@ -333,28 +368,6 @@ app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
 
   next();
   return;
-});
-
-// cors
-app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
-  console.log("cors", req.headers.origin, process.env.FRONTEND_URL);
-  const origin = req.headers.origin;
-  if (req.headers.origin) {
-    if (
-      origin === process.env.FRONTEND_URL ||
-      origin === process.env.SPLEETER_API_URL
-    ) {
-      console.log("CORS: Allowing origin", origin);
-      res.header("Access-Control-Allow-Origin", origin);
-    } else {
-      res.header("Access-Control-Allow-Origin", "http://localhost:3000");
-    }
-  }
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
-
-  next();
 });
 
 userRoutes(app);
@@ -404,10 +417,7 @@ app.post("/api/v1/user/mixer", upload.array("audio", 2), async (req, res) => {
 
   const promises = files.map(async (file, index) => {
     const formData = new FormData();
-    formData.append("audio_file", file.buffer, {
-      filename: file.originalname,
-      contentType: file.mimetype,
-    });
+    formData.append("audio_file", new Blob([file.buffer]), file.originalname);
 
     const response = await fetch(`${process.env.SPLEETER_API_URL}/submit`, {
       method: "POST",
@@ -605,21 +615,28 @@ server.listen(PORT, async () => {
 
   console.log("checking spleeter access...");
 
-  const canAccessSpleeter = await fetch(
-    `${process.env.SPLEETER_API_URL}/health`,
-    {
-      method: "GET",
-      headers: {
-        "rmfosho-real-key": `${process.env.SPLEETER_SERVER_KEY}`,
+  try {
+    const canAccessSpleeter = await fetch(
+      `${process.env.SPLEETER_API_URL}/health`,
+      {
+        method: "GET",
+        headers: {
+          "rmfosho-real-key": `${process.env.SPLEETER_SERVER_KEY}`,
+        },
       },
-    },
-  );
+    );
 
-  const res = await canAccessSpleeter.json();
+    const res = await canAccessSpleeter.json();
 
-  if (res.status) {
-    console.log("able to access spleeter");
-  } else {
-    console.log(res);
+    if (res.status) {
+      console.log("able to access spleeter");
+    } else {
+      console.log(res.ok, "nope!");
+    }
+  } catch (err: Error | unknown) {
+    console.error(
+      "Error checking spleeter access:",
+      err instanceof Error ? err.message : err,
+    );
   }
 });
