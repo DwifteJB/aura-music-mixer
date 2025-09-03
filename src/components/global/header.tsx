@@ -49,8 +49,8 @@ const Header = () => {
             <Search className="mr-4" />
           </div>
           <div className="flex items-center w-1/3 justify-center">
-            <img src="logo.png" className="aspect-square w-8 h-8 mr-2" />
-            <img src="mixer-full.png" className="h-10" />
+            <img src="/logo.png" className="aspect-square w-8 h-8 mr-2" />
+            <img src="/mixer-full.png" className="h-10" />
             {/* <span
               style={{
                 fontFamily: "Inter, sans-serif",

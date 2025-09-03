@@ -36,6 +36,8 @@ export type MixerJobCreated = {
   status: string;
   total_jobs: number;
   completed_jobs: number;
+  instrumental_url?: string;
+  vocals_url?: string;
 };
 
 export interface SpleeterJob {
@@ -56,4 +58,32 @@ export interface MixerJobProgress {
   instrumental_url: string | null;
   error: string | null;
   timestamp: number;
+}
+
+
+export type MixResponse = {
+  job: {
+    id: string
+    userId: string
+    jobIds: Array<string>
+    title: string
+    status: string
+    totalJobs: number
+    completedJobs: number
+    results: {
+      [key: string]: {
+        vocals_url: string
+        completed_at: string
+        instrumental_url: string
+      }
+    }
+    createdAt: string
+    updatedAt: string
+    user: {
+      name: string
+    }
+    JobIdToRealName: {
+      [key: string]: string;
+    }
+  }
 }

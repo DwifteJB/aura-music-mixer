@@ -17,7 +17,8 @@ import { motion } from "motion/react";
 import toast from "react-hot-toast";
 
 import { useAppContext } from "@/components/AppContext";
-import { MixerJobCreated } from "@/types";
+import { MixerJobCreated, MixerJobProgress } from "@/types";
+import { useNavigate } from "react-router";
 
 interface SongDetails {
   title: string;
@@ -32,6 +33,14 @@ interface SongDetails {
   jobId?: string;
   jobFinished?: boolean;
   jobProgress?: number;
+  finishedURL?: {
+    instrumentals?: string;
+    vocals?: string;
+  };
+  finishedBlobs?: {
+    instrumentals?: Blob;
+    vocals?: Blob;
+  };
 }
 
 interface TagWithImage extends ID3Tag {
@@ -100,6 +109,7 @@ const RateLimitCard = ({
 const MixerPage = () => {
   const CommunicationContext = useCommunicationContext();
   const Context = useAppContext();
+  const Navigate = useNavigate();
 
   const [mixing, setMixing] = useState(false);
 
@@ -146,13 +156,13 @@ const MixerPage = () => {
           title: tags?.title || file.name,
           image: tags?.images?.[0]
             ? {
-                mimeType: tags.images[0].mimeType,
-                data: tags.images[0].data,
-              }
+              mimeType: tags.images[0].mimeType,
+              data: tags.images[0].data,
+            }
             : {
-                data: await fetch("/logo.png").then((res) => res.arrayBuffer()),
-                mimeType: "image/png",
-              },
+              data: await fetch("/logo.png").then((res) => res.arrayBuffer()),
+              mimeType: "image/png",
+            },
           file: file,
           filename: file.name,
           size: `${(file.size / 1024).toFixed(2)} KB`,
@@ -163,13 +173,13 @@ const MixerPage = () => {
           title: tags?.title || file.name,
           image: tags?.images?.[0]
             ? {
-                mimeType: tags.images[0].mimeType,
-                data: tags.images[0].data,
-              }
+              mimeType: tags.images[0].mimeType,
+              data: tags.images[0].data,
+            }
             : {
-                data: await fetch("/logo.png").then((res) => res.arrayBuffer()),
-                mimeType: "image/png",
-              },
+              data: await fetch("/logo.png").then((res) => res.arrayBuffer()),
+              mimeType: "image/png",
+            },
           file: file,
           filename: file.name,
           size: `${(file.size / 1024).toFixed(2)} KB`,
@@ -258,38 +268,105 @@ const MixerPage = () => {
     }
 
     CommunicationContext.socket.on(
+      "mixer_job_progress",
+      (data: MixerJobProgress) => {
+        console.warn("Mixer job progress (REAL):", data);
+        console.log(songOne?.jobId);
+
+        if (songOne?.jobId === data.spleeter_job_id) {
+          setSongOne((prev) =>
+            prev
+              ? {
+                ...prev,
+                ...(data.vocals_url && data.instrumental_url) ? {
+                  finishedURL: {
+                    vocals: data.vocals_url as string,
+                    instrumentals: data.instrumental_url as string,
+                  },
+                } : {},
+
+                jobProgress: data.progress,
+              }
+              : prev,
+          );
+
+          console.log("Song One?:", {
+            vocals: data.vocals_url as string,
+            instrumentals: data.instrumental_url as string,
+          });
+        } else if (songTwo?.jobId === data.spleeter_job_id) {
+          setSongTwo((prev) =>
+            prev
+              ? {
+                ...prev,
+                ...(data.vocals_url && data.instrumental_url) ? {
+                  finishedURL: {
+                    vocals: data.vocals_url as string,
+                    instrumentals: data.instrumental_url as string,
+                  },
+                } : {},
+                jobProgress: data.progress,
+              }
+              : prev,
+          );
+
+          console.log("Song Two?:", {
+            vocals: data.vocals_url as string,
+            instrumentals: data.instrumental_url as string,
+          });
+        }
+
+        if (data.overall_status === "completed") {
+          Navigate(`/finishmix/${data.job_id}`);
+        }
+      }
+    );
+
+    CommunicationContext.socket.on(
       "mixer_job_created",
       (data: MixerJobCreated) => {
         console.log("Mixer job created:", data);
 
         for (const job of data.spleeter_jobs) {
+
+          console.log("job", job)
+
           if (job.filename === songOne?.filename) {
+            console.warn("Found job for Song One:", job);
             setSongOne((prev) =>
               prev
                 ? {
-                    ...prev,
-                    jobId: job.job_id,
-                    jobFinished: false,
-                    jobProgress: 0,
-                  }
+                  ...prev,
+                  jobId: job.job_id,
+                  jobFinished: !!data.instrumental_url,
+                  jobProgress: 0,
+                }
                 : prev,
             );
           } else if (job.filename === songTwo?.filename) {
+            console.warn("Found job for Song Two:", job);
             setSongTwo((prev) =>
               prev
                 ? {
-                    ...prev,
-                    jobId: job.job_id,
-                    jobFinished: false,
-                    jobProgress: 0,
-                  }
+                  ...prev,
+                  jobId: job.job_id,
+                  jobFinished: false,
+                  jobProgress: 0,
+                }
                 : prev,
             );
           }
         }
+
       },
     );
-  }, [CommunicationContext.socket]);
+
+
+    return () => {
+      CommunicationContext.socket?.off("mixer_job_progress");
+      CommunicationContext.socket?.off("mixer_job_created");
+    };
+  }, [CommunicationContext.socket, songOne, songTwo]);
 
   if (!CommunicationContext.socket?.connected) {
     return (
@@ -302,7 +379,7 @@ const MixerPage = () => {
             Please wait while we establish a connection.
 
             <br />
-             If this takes too long, try to refresh or see if websockets are enabled in your browser. Otherwise, the server is down.
+            If this takes too long, try to refresh or see if websockets are enabled in your browser. Otherwise, the server is down.
           </p>
         </div>
       </div>
@@ -325,7 +402,7 @@ const MixerPage = () => {
     <div className="mt-6 justify-center items-center w-full">
       <div className="flex flex-col items-center justify-center">
         <h1 className="text-4xl tracking-tighter text-center mb-6">
-          i needa figure out tf to put here
+          Mix Your Songs!
         </h1>
         <Card className="bg-black w-[80%]">
           <CardContent>
@@ -373,11 +450,10 @@ const MixerPage = () => {
                     </div>
                   )}
                   <div
-                    className={`absolute inset-0 flex items-center justify-center transition-all duration-300 z-10 ${
-                      cardOneHovered
-                        ? "opacity-100 scale-100"
-                        : "opacity-0 scale-95"
-                    }`}
+                    className={`absolute inset-0 flex items-center justify-center transition-all duration-300 z-10 ${cardOneHovered
+                      ? "opacity-100 scale-100"
+                      : "opacity-0 scale-95"
+                      }`}
                   >
                     <div
                       className="text-center p-4 rounded-lg bg-black/20 backdrop-blur-sm shadow-2xl border border-white/10"
@@ -500,11 +576,10 @@ const MixerPage = () => {
                     </div>
                   )}
                   <div
-                    className={`absolute inset-0 flex items-center justify-center transition-all duration-300 z-10 ${
-                      cardTwoHovered
-                        ? "opacity-100 scale-100"
-                        : "opacity-0 scale-95"
-                    }`}
+                    className={`absolute inset-0 flex items-center justify-center transition-all duration-300 z-10 ${cardTwoHovered
+                      ? "opacity-100 scale-100"
+                      : "opacity-0 scale-95"
+                      }`}
                   >
                     <div
                       className="text-center p-4 rounded-lg bg-black/20 backdrop-blur-sm shadow-2xl border border-white/10"

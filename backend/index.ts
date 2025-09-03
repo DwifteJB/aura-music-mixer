@@ -3,6 +3,7 @@ import Express, {
   Request as RequestType,
   Response as ResponseType,
   NextFunction as NextFunctionType,
+  json,
 } from "express";
 
 import http from "http";
@@ -328,6 +329,12 @@ app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
     return;
   }
 
+  if (process.env.NODE_ENV === "development") {
+    console.log("Ignoring rate limit in development mode");
+    next();
+    return;
+  }
+
   // if options, ignore
 
   const rateLimit = routesToLimit.find((route) =>
@@ -352,7 +359,7 @@ app.use((req: RequestType, res: ResponseType, next: NextFunctionType) => {
         error: "Rate limit exceeded. Please try again later.",
         retryAfter: Math.ceil(
           (rateLimit.timeWindow - (currentTime - validEntries[0].timestamp)) /
-            1000,
+          1000,
         ),
       });
       return;
@@ -377,6 +384,131 @@ app.get("/", (req: RequestType, res: ResponseType) => {
 });
 
 // MIXER ROUTES!!
+
+app.post("/api/v1/finishmix", json(), async (req: RequestType, res: ResponseType) => {
+  const key = req.data?.authKey as string;
+
+  if (!key) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: {
+      key: key,
+    },
+  });
+
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  const body: {
+    jobId: string
+    vocals: string // song name
+    instrumentals: string // song name
+    vocalVolume: number
+    instrumentalVolume: number
+  } = req.body;
+
+  if (!body.jobId || !body.vocals || !body.instrumentals) {
+    res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  const job = await prisma.job.findFirst({
+    where: {
+      id: body.jobId
+    }
+  })
+
+  if (!job) {
+    res.status(404).json({ error: "Job not found" });
+    return;
+  }
+
+  if (user.id !== job.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+ 
+
+  const data = await prisma.mashedSong.create({
+    data: {
+      userId: user.id,
+      instrumentalVolume: body.instrumentalVolume,
+      instrumentalURL: body.instrumentals,
+      title: job.title,
+      vocalURL: body.vocals,
+      vocalVolume: body.vocalVolume,
+
+    },
+  });
+
+  console.log("Mashed song created:", data.id);
+
+  res.status(201).json({ id: data.id });
+
+})
+
+app.get("/api/v1/finishmix/get", async (req: RequestType, res: ResponseType) => {
+
+  const key = req.data?.authKey as string;
+
+  if (!key) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: {
+      key: key,
+    },
+    include: {
+      mashedSongs: true,
+    },
+  });
+
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  const query = req.query;
+
+  console.log("id", query.id);
+
+  if (!query.id) {
+    return res.status(400).json({ error: "ID is required" });
+  }
+
+  const job = await prisma.job.findUnique({
+    where: { id: query.id as string },
+    include: {
+      user: {
+        select: {
+          name: true,
+          id: true
+        }
+      }
+    }
+  });
+
+
+
+  if (!job) {
+    return res.status(404).json({ error: "Job not found" });
+  }
+
+  if (job?.user.id !== user.id) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  res.status(200).json({ job });
+});
+
 app.post("/api/v1/user/mixer", upload.array("audio", 2), async (req, res) => {
   const key = req.data?.authKey as string;
 
@@ -413,6 +545,9 @@ app.post("/api/v1/user/mixer", upload.array("audio", 2), async (req, res) => {
     return;
   }
 
+  const jobIdToFileName: Record<string, string> = {};
+
+
   const jobIdsTotal: string[] = [];
 
   const promises = files.map(async (file, index) => {
@@ -435,6 +570,7 @@ app.post("/api/v1/user/mixer", upload.array("audio", 2), async (req, res) => {
     const result = await response.json();
 
     jobIdsTotal.push(result.job_id);
+    jobIdToFileName[result.job_id] = file.originalname;
     console.log("Job submitted:", result.job_id);
 
     return {
@@ -458,6 +594,7 @@ app.post("/api/v1/user/mixer", upload.array("audio", 2), async (req, res) => {
         totalJobs: 2,
         completedJobs: 0,
         results: {},
+        JobIdToRealName: jobIdToFileName,
       },
     });
 
@@ -608,6 +745,9 @@ app.get(
   },
 );
 
+
+
+
 // start
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
@@ -640,3 +780,5 @@ server.listen(PORT, async () => {
     );
   }
 });
+
+

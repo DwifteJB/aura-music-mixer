@@ -3,6 +3,9 @@ import { Express, Request, Response } from "express";
 import prisma from "../lib/prisma";
 
 const mixerRoutes = (app: Express) => {
+
+
+
   app.get("/api/v1/job/status", async (req: Request, res: Response) => {
     const key = req.data?.authKey as string;
 

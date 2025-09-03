@@ -1,4 +1,4 @@
-import type { User } from "@/types";
+import type { MixResponse, User } from "@/types";
 
 export const whoAmI = async (key: string): Promise<User | null> => {
   const res = await fetch(
@@ -90,3 +90,24 @@ export const createUser = async (username: string): Promise<User | null> => {
 
   return res.user || null;
 };
+
+export const getFinishMixFromId = async (id: string): Promise<MixResponse | null> => {
+  const response = await fetch(
+    `${import.meta.env.VITE_MAIN_SERVER_URL}/api/v1/finishmix/get?id=${id}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch mix data");
+  }
+
+  const data: MixResponse = await response.json();
+
+  return data || null;
+}
