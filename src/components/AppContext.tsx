@@ -1,5 +1,5 @@
 import { whoAmI } from "@/lib/api-helper";
-import type { AppContextType, User, Notification } from "@/types";
+import type { AppContextType, User } from "@/types";
 import React, { useEffect } from "react";
 
 export const AppContext = React.createContext<AppContextType>(null!);
@@ -21,20 +21,6 @@ export const AppContextProvider: React.FC<React.PropsWithChildren> = ({
 }) => {
   const [user, setUser] = React.useState<User>(null!);
   const [triedUserAuth, setTriedUserAuth] = React.useState(true);
-  const [notifications, setNotifications] = React.useState<Notification[]>([
-    {
-      type: "info",
-      message: "Welcome to Aura Music Mixer!",
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-    },
-    {
-      type: "error",
-      message: "error!!llll",
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-    },
-  ]);
 
   const AUTH_USER = async () => {
     const lastUpdatedUser = new Date(
@@ -104,7 +90,7 @@ export const AppContextProvider: React.FC<React.PropsWithChildren> = ({
 
   return (
     <AppContext.Provider
-      value={{ user, setUser, notifications, setNotifications, triedUserAuth }}
+      value={{ user, setUser, triedUserAuth }}
     >
       {children}
     </AppContext.Provider>

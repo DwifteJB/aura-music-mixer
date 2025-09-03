@@ -87,3 +87,26 @@ export type MixResponse = {
     }
   }
 }
+
+
+export type MashedSong = {
+  id: string
+  title: string
+  instrumentalURL: string
+  vocalURL: string
+  vocalVolume: number
+  instrumentalVolume: number
+  userId: string
+  createdAt: string
+  user: {
+    name: string
+  }
+}
+
+export type mashedSongsFromServer = {
+  message: string
+  mixedSongs: Array<{
+    title: string
+    id: string
+  }>
+}

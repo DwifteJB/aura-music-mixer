@@ -1,6 +1,6 @@
 // user route
 
-import { Express, Request, Response } from "express";
+import { Express, json, Request, Response } from "express";
 
 import prisma from "../lib/prisma";
 
@@ -16,8 +16,8 @@ const userRoutes = (app: Express) => {
     return;
   });
 
-  app.post("/api/v1/user/login", async (req: Request, res: Response) => {
-    const key = req.data?.authKey as string;
+  app.post("/api/v1/user/login", json(), async (req: Request, res: Response) => {
+    const key = req.body?.key as string;
 
     console.log("key gotten!", key);
 
@@ -43,7 +43,7 @@ const userRoutes = (app: Express) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // set to true in production
       sameSite: "strict",
-      maxAge: 31536000, // 1 year
+      maxAge: 10000000
     });
 
     res.status(200).json({
@@ -147,7 +147,12 @@ const userRoutes = (app: Express) => {
         key: key,
       },
       include: {
-        mashedSongs: true,
+        mashedSongs: {
+          select: {
+            title: true,
+            id: true
+          }
+        },
       },
     });
 

@@ -7,6 +7,7 @@ import FourOhFour from "@/pages/404";
 import MixerPage from "@/pages/mixer";
 import MixPage from "@/pages/mix";
 import FinishMix from "@/pages/finishmix";
+import LibraryPage from "@/pages/library";
 
 const Router = () => {
   return (
@@ -21,6 +22,9 @@ const Router = () => {
           <Route path="/mixer" element={<MixerPage />} />
 
           <Route path="/finishmix/:id" element={<FinishMix />} />
+          <Route path="/mix/:id" element={<MixPage />} />
+
+          <Route path="/library" element={<LibraryPage />} />
 
           {/* 404 */}
           <Route path="*" element={<FourOhFour />} />

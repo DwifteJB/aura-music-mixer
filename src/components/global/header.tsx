@@ -4,7 +4,6 @@ import {
   Home,
   Info,
   Library,
-  Search,
   User,
 } from "lucide-react";
 import { useAppContext } from "../AppContext";
@@ -26,7 +25,7 @@ const Header = () => {
     reset: true,
   }));
   return (
-    <div className="w-screen items-center justify-center flex">
+    <div className="w-screen items-center justify-center z-50 flex">
       <header
         className="w-[98%] h-16 bg-transparent "
         style={{
@@ -45,8 +44,9 @@ const Header = () => {
                 navigate("/");
               }}
             />
-            <Library className="mr-4" />
-            <Search className="mr-4" />
+            <Library className="mr-4 cursor-pointer" onClick={() => {
+              navigate("/library");
+            }} />
           </div>
           <div className="flex items-center w-1/3 justify-center">
             <img src="/logo.png" className="aspect-square w-8 h-8 mr-2" />

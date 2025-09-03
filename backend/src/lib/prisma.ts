@@ -4,6 +4,6 @@ let prisma;
 
 prisma = new PrismaClient();
 
-prisma.$connect().then(() => {});
+prisma.$connect().then(() => { });
 
 export default prisma as PrismaClient;

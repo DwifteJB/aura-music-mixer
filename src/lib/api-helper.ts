@@ -1,4 +1,4 @@
-import type { MixResponse, User } from "@/types";
+import type { mashedSongsFromServer, MixResponse, User } from "@/types";
 
 export const whoAmI = async (key: string): Promise<User | null> => {
   const res = await fetch(
@@ -111,3 +111,24 @@ export const getFinishMixFromId = async (id: string): Promise<MixResponse | null
 
   return data || null;
 }
+
+export const getMyMixedSongs = async (): Promise<mashedSongsFromServer> => {
+  const response = await fetch(
+    `${import.meta.env.VITE_MAIN_SERVER_URL}/api/v1/user/myMixedSongs`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch mixed songs");
+  }
+
+  const data: mashedSongsFromServer = await response.json();
+
+  return data || null;
+};

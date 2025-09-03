@@ -1,6 +1,6 @@
 // communication between backend and frontend!!!
 
-import { CommunicationContextType } from "@/types";
+import { CommunicationContextType, MixerJobProgress } from "@/types";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAppContext } from "./AppContext";
@@ -20,11 +20,11 @@ export const CommunicationContextProvider: React.FC<{
   const isServerDown = async () => {
     try {
       const res = await fetch(import.meta.env.VITE_MAIN_SERVER_URL);
-    if (!res.ok) {
-      setServerDown(true);
-    } else {
-      setServerDown(false);
-    }
+      if (!res.ok) {
+        setServerDown(true);
+      } else {
+        setServerDown(false);
+      }
     } catch {
       setServerDown(true);
     }
@@ -76,12 +76,32 @@ export const CommunicationContextProvider: React.FC<{
       // setSocket(null);
     });
 
-    startSocket.on("mixer_job_created", (data) => {
+    startSocket.on("mixer_job_created", (data: MixerJobProgress) => {
       console.log("Mixer job created:", data);
+
+      // setNotifications((prev) => [
+      //   ...prev,
+      //   {
+      //     type: "info",
+      //     message: `Created Mix Job of id ${data.job_id}`,
+      //     id: `socket-connect`,
+      //     createdAt: new Date().toISOString(),
+      //   },
+      // ]);
     });
 
-    startSocket.on("mixer_job_progress", (data) => {
+    startSocket.on("mixer_job_progress", (data: MixerJobProgress) => {
       console.log("Mixer job progress:", data);
+
+      // setNotifications((prev) => [
+      //   ...prev,
+      //   {
+      //     type: "info",
+      //     message: `Mixer job in progress at ${data.progress}%`,
+      //     id: `socket-connect`,
+      //     createdAt: new Date().toISOString(),
+      //   },
+      // ]);
     });
 
     startSocket.on("notification", (notification: Notification) => {

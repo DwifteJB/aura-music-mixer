@@ -7,10 +7,9 @@ import { useNavigate, useParams } from "react-router";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import { Pause, Play, StopCircle } from "lucide-react";
+import { Play, StopCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
-import { send } from "process";
 
 // audioContexts
 
@@ -126,6 +125,12 @@ const FinishMix = () => {
 
             if (json) {
                 console.log("Mix data sent successfully:", json);
+
+                if (json.id) {
+                    navigate(`/mix/${json.id}`);
+                } else {
+                    navigate("/")
+                }
             }
         } catch (e) {
             console.error("Error sending mix data:", e);
@@ -134,45 +139,53 @@ const FinishMix = () => {
     }
 
     const getMixResponseFromId = async (id: string) => {
-        const mix = await getFinishMixFromId(id);
+        try {
+            const mix = await getFinishMixFromId(id);
 
-        if (mix) {
-            setMixResponse(mix);
-            console.log(mix);
-            console.log(mix.job.results)
+            if (mix) {
+                setMixResponse(mix);
+                console.log(mix);
+                console.log(mix.job.results)
 
-            for (const key of Object.keys(mix.job.JobIdToRealName)) {
-                console.warn(key, mix.job.JobIdToRealName[key]);
+                for (const key of Object.keys(mix.job.JobIdToRealName)) {
+                    console.warn(key, mix.job.JobIdToRealName[key]);
 
-                const song = {
-                    name: mix.job.JobIdToRealName[key],
-                    vocalUrl: mix.job.results[key].vocals_url,
-                    instrumentalUrl: mix.job.results[key].instrumental_url,
-                    jobId: key
+                    const song = {
+                        name: mix.job.JobIdToRealName[key],
+                        vocalUrl: mix.job.results[key].vocals_url,
+                        instrumentalUrl: mix.job.results[key].instrumental_url,
+                        jobId: key
+                    }
+
+                    console.log(song);
+
+                    const idx = Object.keys(mix.job.JobIdToRealName).indexOf(key);
+
+                    if (idx === 0) {
+                        setSongOne({
+                            ...song,
+                            useVocals: true
+                        });
+                        console.warn("Set song one:", song);
+                    } else if (idx === 1) {
+                        setSongTwo({
+                            ...song,
+                            useVocals: false,
+                            useInstrumentals: true
+                        });
+                        console.warn("Set song two:", song);
+                    }
                 }
 
-                console.log(song);
-
-                const idx = Object.keys(mix.job.JobIdToRealName).indexOf(key);
-
-                if (idx === 0) {
-                    setSongOne({
-                        ...song,
-                        useVocals: true
-                    });
-                    console.warn("Set song one:", song);
-                } else if (idx === 1) {
-                    setSongTwo({
-                        ...song,
-                        useVocals: false,
-                        useInstrumentals: true
-                    });
-                    console.warn("Set song two:", song);
-                }
+            } else {
+                setError("Failed to fetch mix data");
+                console.error("Failed to fetch mix data");
+                navigate("/");
             }
-
-        } else {
-            setError("Failed to fetch mix data");
+        } catch (e) {
+            console.error("Error fetching mix data:", e);
+            toast.error("Failed to fetch mix data");
+            navigate("/");
         }
     }
 
@@ -201,6 +214,7 @@ const FinishMix = () => {
                 getMixResponseFromId(id);
             } catch (e) {
                 toast.error("Failed to fetch mix data");
+                console.error("Failed to fetch mix data:", e);
                 navigate("/");
             }
         }

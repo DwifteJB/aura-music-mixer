@@ -385,6 +385,34 @@ app.get("/", (req: RequestType, res: ResponseType) => {
 
 // MIXER ROUTES!!
 
+app.get("/api/v1/getMix", async (req: RequestType, res: ResponseType) => {
+  const id = req.query.id as string;
+
+
+  if (!id) {
+    return res.status(400).json({ error: "ID is required" });
+  }
+
+  const mashedSong = await prisma.mashedSong.findFirst({
+    where: {
+      id: id
+    },
+    include: {
+      user: {
+        select: {
+          name: true
+        }
+      }
+    }
+  });
+
+  if (!mashedSong) {
+    return res.status(404).json({ error: "Mashed song not found" });
+  }
+
+  res.status(200).json({ mashedSong });
+});
+
 app.post("/api/v1/finishmix", json(), async (req: RequestType, res: ResponseType) => {
   const key = req.data?.authKey as string;
 
@@ -433,7 +461,6 @@ app.post("/api/v1/finishmix", json(), async (req: RequestType, res: ResponseType
     return;
   }
 
- 
 
   const data = await prisma.mashedSong.create({
     data: {
@@ -445,6 +472,12 @@ app.post("/api/v1/finishmix", json(), async (req: RequestType, res: ResponseType
       vocalVolume: body.vocalVolume,
 
     },
+  });
+
+  await prisma.job.delete({
+    where: {
+      id: job.id
+    }
   });
 
   console.log("Mashed song created:", data.id);
@@ -737,6 +770,7 @@ app.get(
         `attachment; filename="${filename}"`,
       );
 
+      // @ts-expect-error fsf
       response.body?.pipe(res);
     } catch (error) {
       console.error("Download error:", error);

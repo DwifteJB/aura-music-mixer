@@ -1,103 +1,228 @@
-// main home page, add any pages you add to the router!! rahh!!
+import "../../css/player.css";
 
-import { Button } from "@/components/ui/button";
-import { getMixFromId } from "@/lib/api-helper";
-import { MixResponse } from "@/types";
-import { useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useNavigate } from "react-router";
 
-import WavesurferPlayer from '@wavesurfer/react'
+import { Button } from "@headlessui/react";
+import { MashedSong } from "@/types";
+import toast from "react-hot-toast";
+import { Pause } from "lucide-react";
 
-// audioContexts
 
-const MixPage = () => {
-    const [mixRes, setMixResponse] = useState<MixResponse | null>(null);
-    const [error, setError] = useState<string | null>(null);
+
+
+export default function TrackScreen() {
+    const [isLoading, setIsLoading] = useState(true);
+    const [mashedSong, setMashedSong] = useState<MashedSong | null>(null);
+    const [isGettingMix, setIsGettingMix] = useState(false);
+    const [realTitle, setRealTitle] = useState("");
+
+
+    const vocalsRef = useRef<HTMLAudioElement | null>(null);
+    const instrumentalRef = useRef<HTMLAudioElement | null>(null);
+
+    const Navigate = useNavigate();
+
     const { id } = useParams<{ id: string }>();
 
-    const [vocalsUrl, setVocalsUrl] = useState<string | null>(null);
-    const [instrumentalsUrl, setInstrumentalsUrl] = useState<string | null>(null);
+    const getMixFromId = async (id: string) => {
+        if (isGettingMix) return;
+        setIsGettingMix(true);
+        return new Promise<MashedSong | {
+            error: string
+        }>(async (resolve, reject) => {
+            const response = await fetch(`${import.meta.env.VITE_MAIN_SERVER_URL}/api/v1/getMix?id=${id}`);
 
-    const getMixResponseFromId = async (id: string) => {
-        const mix = await getMixFromId(id);
+            const data: {
+                mashedSong: MashedSong,
+                error: string
+            } = await response.json();
 
-        if (mix) {
-            setMixResponse(mix);
-            console.log(mix);
-            console.log(mix.job.results)
+            console.log(data, data.mashedSong)
 
-            /*
+            if (!data.mashedSong) {
+                if (data.error) {
+                    return reject(data);
+                } else {
+                    return reject({
+                        error: "Failed to grab this mix!"
+                    });
 
-            mix.job.results = {
-  "5639782e-9580-4bdf-bd16-1ea341191f1f": {
-    "vocals_url": "http://localhost:5000/download/5639782e-9580-4bdf-bd16-1ea341191f1f/5639782e-9580-4bdf-bd16-1ea341191f1f_vocals.mp3",
-    "completed_at": "2025-09-03T03:34:20.978Z",
-    "instrumental_url": "http://localhost:5000/download/5639782e-9580-4bdf-bd16-1ea341191f1f/5639782e-9580-4bdf-bd16-1ea341191f1f_instrumental.mp3"
-  },
-  "df569787-8298-415a-b885-0a5c11aec382": {
-    "vocals_url": "http://localhost:5000/download/df569787-8298-415a-b885-0a5c11aec382/df569787-8298-415a-b885-0a5c11aec382_vocals.mp3",
-    "completed_at": "2025-09-03T03:34:01.753Z",
-    "instrumental_url": "http://localhost:5000/download/df569787-8298-415a-b885-0a5c11aec382/df569787-8298-415a-b885-0a5c11aec382_instrumental.mp3"
-  }
-}
+                }
+            }
 
-*/
+            const vocalAudio = new Audio(data.mashedSong.vocalURL);
+            const instrumentalAudio = new Audio(data.mashedSong.instrumentalURL);
 
-        // first is vocals, second is instru
-        setVocalsUrl(mix.job.results[Object.keys(mix.job.results)[0]].vocals_url);
-        setInstrumentalsUrl(mix.job.results[Object.keys(mix.job.results)[0]].instrumental_url);
+            vocalAudio.volume = data.mashedSong.vocalVolume;
+            instrumentalAudio.volume = data.mashedSong.instrumentalVolume;
 
-        console.log(mix.job.results[Object.keys(mix.job.results)[0]].vocals_url);
-        console.log(mix.job.results[Object.keys(mix.job.results)[0]].instrumental_url);
+            vocalsRef.current = vocalAudio;
+            instrumentalRef.current = instrumentalAudio;
 
-        } else {
-            setError("Failed to fetch mix data");
+            const titleSplit = data.mashedSong.title.split("&")
+
+            setRealTitle(`${titleSplit[0].trim().charAt(0)}x${titleSplit[1].trim().charAt(0)}`)
+
+            setMashedSong((data as {
+                mashedSong: MashedSong
+            }).mashedSong);
+
+            setIsLoading(false);
+
+            return resolve(data);
+        });
+    }
+
+    const getMix = (id: string) => {
+        const prom = getMixFromId(id);
+
+        prom.catch((err) => {
+            toast.error(err.error || "Failed to grab this mix!");
+            Navigate("/")
+        })
+    }
+
+    const pause = () => {
+        if (vocalsRef.current) {
+            vocalsRef.current.pause();
+        }
+
+        if (instrumentalRef.current) {
+            instrumentalRef.current.pause();
         }
     }
 
+    const play = () => {
+
+        if (vocalsRef.current) {
+            vocalsRef.current.play();
+        }
+
+        if (instrumentalRef.current) {
+            instrumentalRef.current.play();
+        }
+    }
     useEffect(() => {
-        if (id) {
-            getMixResponseFromId(id);
+        return () => {
+            if (vocalsRef.current) {
+                vocalsRef.current.pause();
+                vocalsRef.current = null;
+            }
+            if (instrumentalRef.current) {
+                instrumentalRef.current.pause();
+                instrumentalRef.current = null;
+            }
+        };
+    }, []);
+    
+    useEffect(() => {
+        if (id && !isGettingMix) {
+            getMix(id);
         }
     }, [id]);
 
-    if (!id) {
-        return <h1>loading...</h1>
+    if (isLoading || !mashedSong) {
+        return (
+            <div className="select-none min-w-screen min-h-screen flex-col bg-[#0B0B0B] text-center items-center justify-center">
+                <div className="min-w-screen items-center justify-center">
+                    <div className="flex flex-col text-center items-center justify-center h-64">
+                        <div className="soundbar-container-big min-w-20 min-h-20">
+                            <div className="soundbar-big bg-purple-500 rounded-full animate-soundbar1"></div>
+                            <div className="soundbar-big bg-purple-500 rounded-full animate-soundbar2"></div>
+                            <div className="soundbar-big bg-purple-500 rounded-full animate-soundbar3"></div>
+                            <div className="soundbar-big bg-purple-500 rounded-full animate-soundbar2"></div>
+                            <div className="soundbar-big bg-purple-500 rounded-full animate-soundbar1"></div>
+                            <div className="soundbar-big bg-purple-500 rounded-full animate-soundbar1"></div>
+                            <div className="soundbar-big bg-purple-500 rounded-full animate-soundbar3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     }
-
-    if (error) {
-        return <h1>{error}</h1>;
-    }
-
-    if (!mixRes) {
-        return <h1>loading...</h1>;
-    }
-
 
     return (
-        <div className="mt-8">
-            <div className="flex flex-col items-center justify-center">
-                <span className="text-3xl tracking-tighter">
-                    Mix Between {mixRes.job.title.replaceAll(".mp3", "")}
-                </span>
+        <div className="select-none flex-col">
+            <div className="w-full h-10" />
 
-                <span className="text-2xl tracking-tighter">
-                    Created by {mixRes.job.user.name}
-                </span>
+            <div
+                className="flex flex-col items-center gap-16 px-24 h-full"
+                style={{
+                    zIndex: "50",
+                }}
+            >
+                <div
+                    className={`top-5 sticky lg:sticky md:sticky sm:sticky w-full items-center sm:w-[400px] md:w-[400px] lg:w-[400px]`}
+                >
+                    <div>
+                        <div className="aspect-square will-change-transform relative flex items-center justify-center bg-[#ee31ee] rounded-[15px]">
+                            <span className="text-white text-8xl font-bold">
+                                {realTitle}
+                            </span>
+                        </div>
+
+                        <div className="text-center pt-4">
+                            <span className="inter-medium text-xl">{mashedSong.title}</span>
+                        </div>
+
+                        <div className="pt-3 text-center space-x-4">
+
+                            <Button
+                                onClick={() => {
+                                    play();
+                                }}
+                                className="rounded-[10px] backdrop-blur py-1 px-1 text-sm text-white text-right bg-[#ee31ee] hover:bg-[#ee31ee]/80"
+                            >
+                                <svg
+                                    width="50"
+                                    height="50"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        d="M14 14.329v21.343c0 1.924 2.083 3.127 3.75 2.165l18.496-10.672c1.668-.962 1.668-3.368 0-4.33L17.75 12.162c-1.666-.962-3.749.241-3.749 2.165Z"
+                                        fill="#fff"
+                                    />
+                                </svg>
+                            </Button>
+
+                            <Button
+                                className="rounded-[10px] backdrop-blur py-1 px-1 text-sm text-white text-right bg-[#ee31ee] hover:bg-[#ee31ee]/80"
+                                onClick={() => {
+                                    pause();
+                                }}
+                            >
+                                <Pause size={50} />
+                            </Button>
 
 
-                <div className="mt-8 !bg-[#141414] rounded-sm p-5 w-[80%] flex justify-center">
-                   <img src="/logo.png" alt="Logo" />
+                        </div>
+
+                        <div className="text-center pt-2 z-50" style={{ zIndex: "50" }}>
+                            <span className="inter text-base text-white select-none nowrap-text whitespace-nowrap">
+                                <div className="w-full flex items-center justify-center">
+                                    <span
+
+                                        className="cursor-pointer inter text-white select-none"
+                                    >
+                                        {mashedSong.user.name}
+                                    </span>
+                                    <div className="flex items-center ml-1">
+
+                                        {" • "} {new Date(mashedSong.createdAt).toLocaleDateString()}{" "}
+                                    </div>
+                                </div>
+                            </span>
+                        </div>
+
+                        <br />
+                        <div>
+
+                        </div>
+                    </div>
                 </div>
-
-                <WavesurferPlayer
-                    url={vocalsUrl || ""}
-
-                    onReady={() => console.log("Wavesurfer is ready")}
-                />
             </div>
         </div>
     );
-};
-
-export default MixPage;
+}

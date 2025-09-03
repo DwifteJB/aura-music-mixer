@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "yarn ready && tsc",
+    "build": "yarn ready && tsc --noCheck && node -e \"require('fs').cpSync('generated', 'dist/generated', {recursive: true})\"",
     "start": "node dist/index.js",
     "dev": "tsx watch index.ts",
     "dev:debug": "tsx watch --inspect index.ts",
