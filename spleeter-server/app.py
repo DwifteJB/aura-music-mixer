@@ -238,6 +238,12 @@ def before_request():
     ip = request.remote_addr
     sentKey = request.headers.get('rmfosho-real-key')
 
+    # do not do this for /download
+    print(request.path)
+    print(request.path.startswith("/download"))
+    if request.path.startswith('/download'):
+        return
+
     if sentKey != SPLEETER_KEY:
         logger.warning(f"{ip} used the incorrect key: {sentKey}")
         return jsonify({'error': 'Unauthorized'}), 403
@@ -382,7 +388,7 @@ def list_jobs():
 if __name__ == '__main__':
     logger.info("Pre-loading Spleeter separator...")
     get_separator()
-    logger.info("Spleeter separator pre-loaded successfully")
+    logger.info("Spleeter separator pre-loaded successfully !!! :D")
 
 
     if SPLEETER_KEY == 'your_spleeter_key_here':
