@@ -209,7 +209,8 @@ def worker_thread():
     
     while True:
         try:
-            cleanup_old_files([UPLOAD_FOLDER, OUTPUT_FOLDER, TEMP_FOLDER], minutes=120) # gotta keep storage down, this is free after all :P
+            cleanup_old_files([UPLOAD_FOLDER, TEMP_FOLDER], minutes=120) # gotta keep storage down, this is free after all :P output-folder removed
+            cleanup_old_files([OUTPUT_FOLDER], minutes=1440) # keep outputs longer 1440 = 24 hours
             job_data = job_queue.get()
             
             if job_data is None:  
@@ -232,7 +233,8 @@ worker.start()
 @app.before_request
 def before_request():
     # cleanup old files
-    cleanup_old_files([UPLOAD_FOLDER, OUTPUT_FOLDER, TEMP_FOLDER], minutes=120)
+    cleanup_old_files([UPLOAD_FOLDER, TEMP_FOLDER], minutes=120) # gotta keep storage down, this is free after all :P output-folder removed
+    cleanup_old_files([OUTPUT_FOLDER], minutes=1440) # keep outputs longer 1440 = 24 hours
 
     # check if key is correct
     ip = request.remote_addr
